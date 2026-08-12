@@ -208,11 +208,31 @@ const changePassword = async (req, res) => {
   }
 };
 
+// Delete Account
+const deleteAccount = async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.user._id);
 
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    res.status(200).json({
+      message: "Account deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
 
 module.exports = {
   registerUser,
   loginUser,
   updateProfile,
   changePassword,
+  deleteAccount,
 };
