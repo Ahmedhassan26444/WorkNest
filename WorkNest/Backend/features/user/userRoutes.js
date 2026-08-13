@@ -1,15 +1,15 @@
 const express = require("express");
-const authMiddleware = require("../middleware/authMiddleware");
+const authMiddleware = require("../../middleware/authMiddleware");
 
 const {
   updateProfile,
   changePassword,
   deleteAccount,
-} = require("../controllers/authController");
+} = require("./userController");
 
 const router = express.Router();
 
-// Protected route - Get Profile
+// Get Profile
 router.get("/profile", authMiddleware, (req, res) => {
   res.json({
     message: "Profile accessed successfully",
@@ -17,13 +17,13 @@ router.get("/profile", authMiddleware, (req, res) => {
   });
 });
 
-// Protected route - Update Profile
+// Update Profile
 router.put("/profile", authMiddleware, updateProfile);
 
-// Protected route - Change Password
+// Change Password
 router.put("/change-password", authMiddleware, changePassword);
 
-// Protected route - Delete Account
+// Delete Account
 router.delete("/account", authMiddleware, deleteAccount);
 
 module.exports = router;
