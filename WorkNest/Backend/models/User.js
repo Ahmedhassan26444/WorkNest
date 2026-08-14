@@ -22,12 +22,17 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "owner",
     },
+
+    organization: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Organization",
+      default: null,
+    },
   },
   {
     timestamps: true,
   }
 );
-
 
 const User = mongoose.model("User", userSchema);
 
