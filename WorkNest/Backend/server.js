@@ -6,6 +6,7 @@ require("dotenv").config();
 const authRoutes = require("./features/auth/authRoutes");
 const userRoutes = require("./features/user/userRoutes");
 const organizationRoutes = require("./features/organization/organizationRoutes");
+const memberRoutes = require("./features/organization/memberRoutes");
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/organization", organizationRoutes);
+app.use("/api/organization", memberRoutes);
 
 // Test route
 app.get("/", (req, res) => {
