@@ -1,17 +1,21 @@
 const express = require("express");
 const authMiddleware = require("../../middleware/authMiddleware");
-
+const roleMiddleware = require("../../middleware/roleMiddleware");
 const {
   addMember,
   getMembers,
 } = require("./memberController");
-
 const router = express.Router();
-
-// Add member to organization
-router.post("/members", authMiddleware, addMember);
-
-// Get organization members
-router.get("/members", authMiddleware, getMembers);
-
+router.post(
+  "/members",
+  authMiddleware,
+  roleMiddleware("owner"),
+  addMember
+);
+router.get(
+  "/members",
+  authMiddleware,
+  roleMiddleware("owner", "manager"),
+  getMembers
+);
 module.exports = router;

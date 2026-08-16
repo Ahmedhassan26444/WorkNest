@@ -7,26 +7,33 @@ const authRoutes = require("./features/auth/authRoutes");
 const userRoutes = require("./features/user/userRoutes");
 const organizationRoutes = require("./features/organization/organizationRoutes");
 const memberRoutes = require("./features/organization/memberRoutes");
+const projectRoutes = require("./features/project/projectRoutes");
 
 const app = express();
+
 
 // Database
 connectDB();
 
+
 // Middleware
 app.use(cors());
 app.use(express.json());
+
 
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/organization", organizationRoutes);
 app.use("/api/organization", memberRoutes);
+app.use("/api/projects", projectRoutes);
+
 
 // Test route
 app.get("/", (req, res) => {
   res.send("WorkNest Backend Running");
 });
+
 
 // Server
 app.listen(5000, () => {
