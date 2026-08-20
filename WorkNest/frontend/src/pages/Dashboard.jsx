@@ -1,4 +1,26 @@
+import { useEffect, useState } from "react";
+import { getDashboard } from "../services/dashboardApi";
+
 const Dashboard = () => {
+  const [dashboard, setDashboard] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const data = await getDashboard();
+        setDashboard(data.dashboard);
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboard();
+  }, []);
+
   return (
     <div className="min-h-screen bg-slate-950 text-white flex">
 
@@ -40,7 +62,6 @@ const Dashboard = () => {
           </button>
 
         </nav>
-
       </aside>
 
       {/* Main Content */}
@@ -72,6 +93,7 @@ const Dashboard = () => {
               </div>
 
               <div className="hidden sm:block">
+
                 <p className="text-sm font-medium">
                   Ahmed Hassan
                 </p>
@@ -79,12 +101,10 @@ const Dashboard = () => {
                 <p className="text-xs text-slate-500">
                   Owner
                 </p>
+
               </div>
-
             </div>
-
           </div>
-
         </header>
 
         {/* Dashboard Content */}
@@ -92,6 +112,7 @@ const Dashboard = () => {
 
           {/* Welcome */}
           <div className="mb-8">
+
             <h1 className="text-3xl font-bold">
               Welcome back, Ahmed 👋
             </h1>
@@ -99,65 +120,99 @@ const Dashboard = () => {
             <p className="text-slate-400 mt-2">
               Here's what's happening in your workspace.
             </p>
+
           </div>
+
+          {/* Loading */}
+          {loading && (
+            <div className="mb-6 text-slate-400">
+              Loading dashboard...
+            </div>
+          )}
+
+          {/* Error */}
+          {error && (
+            <div className="mb-6 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg p-4">
+              {error}
+            </div>
+          )}
 
           {/* Statistics */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
 
+            {/* Projects */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+
               <p className="text-sm text-slate-400">
                 Projects
               </p>
 
               <h3 className="text-3xl font-bold mt-2">
-                0
+                {dashboard?.projects?.total ?? 0}
               </h3>
 
               <p className="text-xs text-slate-500 mt-2">
-                Active projects
+                Active projects: {dashboard?.projects?.active ?? 0}
               </p>
+
             </div>
 
+            {/* Tasks */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+
               <p className="text-sm text-slate-400">
                 Tasks
               </p>
 
               <h3 className="text-3xl font-bold mt-2">
-                0
+                {dashboard?.tasks?.total ?? 0}
               </h3>
 
               <p className="text-xs text-slate-500 mt-2">
                 Total tasks
               </p>
+
             </div>
 
+            {/* Team Members */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+
               <p className="text-sm text-slate-400">
                 Team Members
               </p>
 
               <h3 className="text-3xl font-bold mt-2">
-                1
+                {dashboard?.team?.total ?? 0}
               </h3>
 
               <p className="text-xs text-slate-500 mt-2">
                 Workspace members
               </p>
+
             </div>
 
+            {/* Completed */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+
               <p className="text-sm text-slate-400">
                 Completed
               </p>
 
               <h3 className="text-3xl font-bold mt-2">
-                0%
+                {dashboard?.tasks?.total
+                  ? Math.round(
+                      (dashboard.tasks.completed /
+                        dashboard.tasks.total) *
+                        100
+                    )
+                  : 0}
+                %
               </h3>
 
               <p className="text-xs text-slate-500 mt-2">
                 Task completion
               </p>
+
             </div>
 
           </div>
@@ -166,6 +221,7 @@ const Dashboard = () => {
           <div className="bg-slate-900 border border-slate-800 rounded-xl">
 
             <div className="p-6 border-b border-slate-800">
+
               <h2 className="text-lg font-semibold">
                 Recent Projects
               </h2>
@@ -173,6 +229,7 @@ const Dashboard = () => {
               <p className="text-sm text-slate-500 mt-1">
                 Your latest workspace projects
               </p>
+
             </div>
 
             <div className="p-10 text-center">

@@ -9,6 +9,7 @@ const organizationRoutes = require("./features/organization/organizationRoutes")
 const memberRoutes = require("./features/organization/memberRoutes");
 const projectRoutes = require("./features/project/projectRoutes");
 const taskRoutes = require("./features/task/taskRoutes");
+const dashboardRoutes = require("./features/dashboard/dashboardRoutes");
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.use("/api/organization", organizationRoutes);
 app.use("/api/organization", memberRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 
 // Test route
