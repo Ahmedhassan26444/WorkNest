@@ -1,34 +1,115 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getProfile, updateProfile } from "../services/userApi";
 
 const Profile = () => {
   const navigate = useNavigate();
 
-  const storedUser = localStorage.getItem("user");
+  const [user, setUser] = useState(null);
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const user = (() => {
+  // ================= GET PROFILE =================
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await getProfile();
+
+        setUser(data.user);
+        setName(data.user?.name || "");
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  // ================= UPDATE PROFILE =================
+
+  const handleUpdateProfile = async () => {
     try {
-      return storedUser ? JSON.parse(storedUser) : null;
-    } catch {
-      return null;
+      setSaving(true);
+      setError("");
+      setSuccess("");
+
+      if (!name.trim()) {
+        setError("Name cannot be empty.");
+        return;
+      }
+
+      const data = await updateProfile(name.trim());
+
+      setUser(data.user);
+
+      // Update localStorage as well
+      const storedUser = localStorage.getItem("user");
+
+      if (storedUser) {
+        try {
+          const localUser = JSON.parse(storedUser);
+
+          localStorage.setItem(
+            "user",
+            JSON.stringify({
+              ...localUser,
+              name: data.user.name,
+            })
+          );
+        } catch {
+          // Ignore invalid localStorage data
+        }
+      }
+
+      setSuccess("Profile updated successfully.");
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setSaving(false);
     }
-  })();
+  };
+
+  // ================= LOGOUT =================
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    navigate("/login");
+  };
+
+  // ================= USER DATA =================
 
   const userName = user?.name || "User";
   const userEmail = user?.email || "No email";
   const userRole = user?.role || "Owner";
   const userInitial = userName.charAt(0).toUpperCase();
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
+  // ================= LOADING =================
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
+        <div className="text-slate-400">Loading profile...</div>
+      </div>
+    );
+  }
+
+  // ================= UI =================
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
 
       {/* Header */}
-
       <header className="h-20 border-b border-slate-800 bg-slate-950 flex items-center justify-between px-5 md:px-8">
 
         <div className="flex items-center gap-4">
@@ -41,7 +122,6 @@ const Profile = () => {
           </button>
 
           <div>
-
             <h1 className="text-xl font-bold">
               Work<span className="text-blue-500">Nest</span>
             </h1>
@@ -49,7 +129,6 @@ const Profile = () => {
             <p className="text-xs text-slate-500">
               Profile
             </p>
-
           </div>
 
         </div>
@@ -64,9 +143,9 @@ const Profile = () => {
       </header>
 
       {/* Content */}
-
       <main className="max-w-4xl mx-auto px-5 md:px-8 py-10">
 
+        {/* Page Heading */}
         <div className="mb-8">
 
           <p className="text-sm text-blue-400 font-medium mb-2">
@@ -78,17 +157,29 @@ const Profile = () => {
           </h1>
 
           <p className="text-slate-400 mt-2">
-            View your WorkNest account information.
+            View and update your WorkNest account information.
           </p>
 
         </div>
 
-        {/* Profile Card */}
+        {/* Error */}
+        {error && (
+          <div className="mb-6 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl p-4">
+            {error}
+          </div>
+        )}
 
+        {/* Success */}
+        {success && (
+          <div className="mb-6 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl p-4">
+            {success}
+          </div>
+        )}
+
+        {/* Profile Card */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
 
           {/* Profile Header */}
-
           <div className="p-8 border-b border-slate-800">
 
             <div className="flex items-center gap-5">
@@ -118,7 +209,6 @@ const Profile = () => {
           </div>
 
           {/* Account Information */}
-
           <div className="p-8">
 
             <h3 className="text-lg font-semibold mb-6">
@@ -128,49 +218,48 @@ const Profile = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
               {/* Name */}
-
               <div>
 
                 <p className="text-sm text-slate-500 mb-2">
                   Full Name
                 </p>
 
-                <div className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3">
-                  {userName}
-                </div>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500 transition"
+                />
 
               </div>
 
               {/* Email */}
-
               <div>
 
                 <p className="text-sm text-slate-500 mb-2">
                   Email Address
                 </p>
 
-                <div className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3">
+                <div className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-400">
                   {userEmail}
                 </div>
 
               </div>
 
               {/* Role */}
-
               <div>
 
                 <p className="text-sm text-slate-500 mb-2">
                   Role
                 </p>
 
-                <div className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 capitalize">
+                <div className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 capitalize text-slate-400">
                   {userRole}
                 </div>
 
               </div>
 
               {/* Account Status */}
-
               <div>
 
                 <p className="text-sm text-slate-500 mb-2">
@@ -185,13 +274,25 @@ const Profile = () => {
 
             </div>
 
-            {/* Actions */}
+            {/* Update Button */}
+            <div className="mt-8 pt-6 border-t border-slate-800">
 
-            <div className="mt-8 pt-6 border-t border-slate-800 flex flex-wrap gap-3">
+              <button
+                onClick={handleUpdateProfile}
+                disabled={saving}
+                className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 font-medium transition"
+              >
+                {saving ? "Saving..." : "Save Changes"}
+              </button>
+
+            </div>
+
+            {/* Actions */}
+            <div className="mt-6 pt-6 border-t border-slate-800 flex flex-wrap gap-3">
 
               <button
                 onClick={() => navigate("/settings")}
-                className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 font-medium transition"
+                className="px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 font-medium transition"
               >
                 Account Settings
               </button>

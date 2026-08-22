@@ -1,29 +1,81 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import CreateOrganization from "./pages/CreateOrganization";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
+import Projects from "./pages/Projects";
+import ProjectDetails from "./pages/ProjectDetails";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+
         {/* Authentication */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+
+        <Route
+          path="/login"
+          element={<Login />}
+        />
+
+        <Route
+          path="/register"
+          element={<Register />}
+        />
 
         {/* Organization onboarding */}
-        <Route path="/create-organization" element={<CreateOrganization />} />
+
+        <Route
+          path="/create-organization"
+          element={<CreateOrganization />}
+        />
 
         {/* Dashboard */}
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/settings" element={<Settings />} />
+
+        <Route
+          path="/dashboard"
+          element={<Dashboard />}
+        />
+
+        <Route
+          path="/profile"
+          element={<Profile />}
+        />
+
+        <Route
+          path="/settings"
+          element={<Settings />}
+        />
+
+        {/* Projects */}
+
+        <Route
+          path="/projects"
+          element={<Projects />}
+        />
+
+        {/* Project Details */}
+
+        <Route
+          path="/projects/:id"
+          element={<ProjectDetails />}
+        />
 
         {/* Default */}
-        <Route path="/" element={<Navigate to="/login" />} />
+
+        <Route
+          path="/"
+          element={<Navigate to="/login" replace />}
+        />
+
       </Routes>
     </BrowserRouter>
   );

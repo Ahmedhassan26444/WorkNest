@@ -1,5 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  changePassword,
+  deleteAccount,
+} from "../services/userApi";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -32,20 +36,23 @@ const Settings = () => {
   const [passwordSuccess, setPasswordSuccess] = useState("");
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   // ================= CHANGE PASSWORD =================
 
-  const handleChangePassword = (e) => {
+  const handleChangePassword = async (e) => {
     e.preventDefault();
 
     setPasswordError("");
     setPasswordSuccess("");
 
+    // Check empty fields
     if (!currentPassword || !newPassword || !confirmPassword) {
       setPasswordError("Please fill in all password fields.");
       return;
     }
 
+    // Check password length
     if (newPassword.length < 6) {
       setPasswordError(
         "New password must be at least 6 characters long."
@@ -53,27 +60,60 @@ const Settings = () => {
       return;
     }
 
+    // Check password match
     if (newPassword !== confirmPassword) {
-      setPasswordError("New password and confirm password do not match.");
+      setPasswordError(
+        "New password and confirm password do not match."
+      );
       return;
     }
 
-    // Backend API will be connected here
-    setPasswordSuccess(
-      "Password validation successful. Backend connection will be added next."
-    );
+    try {
+      const response = await changePassword(
+      currentPassword,
+      newPassword
+      );
 
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
+      setPasswordSuccess(
+        response.message || "Password changed successfully."
+      );
+
+      // Clear fields
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error) {
+      setPasswordError(
+        error.response?.data?.message ||
+          "Failed to change password."
+      );
+    }
   };
 
   // ================= DELETE ACCOUNT =================
 
-  const handleDeleteAccount = () => {
-    // Backend delete-account API will be connected here.
-    alert("Delete account API will be connected next.");
-    setShowDeleteConfirm(false);
+  const handleDeleteAccount = async () => {
+    setDeleteError("");
+
+    try {
+      const response = await deleteAccount();
+
+      alert(
+        response.message || "Account deleted successfully."
+      );
+
+      // Remove logged-in user data
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+
+      // Go back to login
+      navigate("/login");
+    } catch (error) {
+      setDeleteError(
+        error.response?.data?.message ||
+          "Failed to delete account."
+      );
+    }
   };
 
   // ================= UI =================
@@ -95,6 +135,7 @@ const Settings = () => {
           </button>
 
           <div>
+
             <h1 className="text-xl font-semibold">
               Account Settings
             </h1>
@@ -102,6 +143,7 @@ const Settings = () => {
             <p className="text-sm text-slate-500">
               Manage your WorkNest account
             </p>
+
           </div>
 
         </div>
@@ -379,7 +421,10 @@ const Settings = () => {
             {!showDeleteConfirm ? (
 
               <button
-                onClick={() => setShowDeleteConfirm(true)}
+                onClick={() => {
+                  setShowDeleteConfirm(true);
+                  setDeleteError("");
+                }}
                 className="px-5 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition font-medium"
               >
                 Delete Account
@@ -396,11 +441,19 @@ const Settings = () => {
                   </h3>
 
                   <p className="text-sm text-slate-400 mt-2">
-                    This action will permanently delete your WorkNest
-                    account. This cannot be undone.
+                    This action will permanently delete your
+                    WorkNest account. This cannot be undone.
                   </p>
 
                 </div>
+
+                {/* Delete Error */}
+
+                {deleteError && (
+                  <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                    {deleteError}
+                  </div>
+                )}
 
                 <div className="flex flex-wrap gap-3">
 
@@ -412,7 +465,10 @@ const Settings = () => {
                   </button>
 
                   <button
-                    onClick={() => setShowDeleteConfirm(false)}
+                    onClick={() => {
+                      setShowDeleteConfirm(false);
+                      setDeleteError("");
+                    }}
                     className="px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition"
                   >
                     Cancel
