@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import {
   getProjects,
   createProject,
@@ -9,6 +10,14 @@ import {
 
 const Projects = () => {
   const navigate = useNavigate();
+
+  // ================= USER ROLE =================
+
+  const user = JSON.parse(localStorage.getItem("user"));
+  const userRole = user?.role;
+
+  const canManageProjects =
+    userRole === "owner" || userRole === "manager";
 
   // ================= STATES =================
 
@@ -74,6 +83,13 @@ const Projects = () => {
     setError("");
     setSuccess("");
 
+    if (!canManageProjects) {
+      setError(
+        "Access denied. You do not have permission to create projects."
+      );
+      return;
+    }
+
     if (!name.trim()) {
       setError("Project name is required.");
       return;
@@ -103,7 +119,9 @@ const Projects = () => {
       setStatus("planning");
       setShowCreateForm(false);
     } catch (error) {
-      setError(error.message || "Failed to create project");
+      setError(
+        error.message || "Failed to create project"
+      );
     } finally {
       setCreating(false);
     }
@@ -112,11 +130,17 @@ const Projects = () => {
   // ================= START EDIT =================
 
   const handleEditProject = (project) => {
+    if (!canManageProjects) {
+      setError(
+        "Access denied. You do not have permission to edit projects."
+      );
+      return;
+    }
+
     setError("");
     setSuccess("");
 
     setEditingProject(project);
-
     setEditName(project.name || "");
     setEditDescription(project.description || "");
     setEditStatus(project.status || "planning");
@@ -130,6 +154,13 @@ const Projects = () => {
     setError("");
     setSuccess("");
 
+    if (!canManageProjects) {
+      setError(
+        "Access denied. You do not have permission to update projects."
+      );
+      return;
+    }
+
     if (!editName.trim()) {
       setError("Project name is required.");
       return;
@@ -142,11 +173,14 @@ const Projects = () => {
     try {
       setUpdating(true);
 
-      const data = await updateProject(editingProject._id, {
-        name: editName.trim(),
-        description: editDescription.trim(),
-        status: editStatus,
-      });
+      const data = await updateProject(
+        editingProject._id,
+        {
+          name: editName.trim(),
+          description: editDescription.trim(),
+          status: editStatus,
+        }
+      );
 
       // Update project in UI
       setProjects((prevProjects) =>
@@ -167,7 +201,9 @@ const Projects = () => {
       setEditDescription("");
       setEditStatus("planning");
     } catch (error) {
-      setError(error.message || "Failed to update project");
+      setError(
+        error.message || "Failed to update project"
+      );
     } finally {
       setUpdating(false);
     }
@@ -177,17 +213,22 @@ const Projects = () => {
 
   const handleCancelEdit = () => {
     setEditingProject(null);
-
     setEditName("");
     setEditDescription("");
     setEditStatus("planning");
-
     setError("");
   };
 
   // ================= DELETE PROJECT =================
 
   const handleDeleteProject = async (id) => {
+    if (!canManageProjects) {
+      setError(
+        "Access denied. You do not have permission to delete projects."
+      );
+      return;
+    }
+
     const confirmed = window.confirm(
       "Are you sure you want to delete this project?"
     );
@@ -269,17 +310,21 @@ const Projects = () => {
 
         </div>
 
-        <button
-          onClick={() => {
-            setShowCreateForm(true);
-            setEditingProject(null);
-            setError("");
-            setSuccess("");
-          }}
-          className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium transition"
-        >
-          + New Project
-        </button>
+        {/* ONLY OWNER AND MANAGER */}
+
+        {canManageProjects && (
+          <button
+            onClick={() => {
+              setShowCreateForm(true);
+              setEditingProject(null);
+              setError("");
+              setSuccess("");
+            }}
+            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium transition"
+          >
+            + New Project
+          </button>
+        )}
 
       </header>
 
@@ -300,7 +345,9 @@ const Projects = () => {
           </h1>
 
           <p className="text-slate-400 mt-2">
-            Create and manage projects for your organization.
+            {canManageProjects
+              ? "Create and manage projects for your organization."
+              : "View projects in your organization."}
           </p>
 
         </div>
@@ -321,7 +368,7 @@ const Projects = () => {
 
         {/* ================= CREATE FORM ================= */}
 
-        {showCreateForm && (
+        {showCreateForm && canManageProjects && (
           <section className="mb-8 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
 
             <div className="p-6 border-b border-slate-800">
@@ -454,7 +501,7 @@ const Projects = () => {
 
         {/* ================= EDIT FORM ================= */}
 
-        {editingProject && (
+        {editingProject && canManageProjects && (
           <section className="mb-8 bg-slate-900 border border-blue-500/20 rounded-2xl overflow-hidden">
 
             <div className="p-6 border-b border-slate-800">
@@ -604,19 +651,25 @@ const Projects = () => {
             </h2>
 
             <p className="text-slate-500 mt-2 mb-6">
-              Create your first project to get started.
+              {canManageProjects
+                ? "Create your first project to get started."
+                : "No projects are available."}
             </p>
 
-            <button
-              onClick={() => {
-                setShowCreateForm(true);
-                setError("");
-                setSuccess("");
-              }}
-              className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium transition"
-            >
-              + Create Project
-            </button>
+            {/* ONLY OWNER AND MANAGER */}
+
+            {canManageProjects && (
+              <button
+                onClick={() => {
+                  setShowCreateForm(true);
+                  setError("");
+                  setSuccess("");
+                }}
+                className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium transition"
+              >
+                + Create Project
+              </button>
+            )}
 
           </div>
 
@@ -677,11 +730,11 @@ const Projects = () => {
                     : "N/A"}
                 </p>
 
-                {/* Actions */}
+                {/* ================= ACTIONS ================= */}
 
                 <div className="flex gap-2 mt-6 pt-5 border-t border-slate-800">
 
-                  {/* View */}
+                  {/* VIEW — EVERYONE */}
 
                   <button
                     onClick={() =>
@@ -689,39 +742,47 @@ const Projects = () => {
                         `/projects/${project._id}`
                       )
                     }
-                    className="flex-1 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                    className={
+                      canManageProjects
+                        ? "flex-1 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                        : "w-full px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                    }
                   >
                     View
                   </button>
 
-                  {/* Edit */}
+                  {/* EDIT — OWNER + MANAGER ONLY */}
 
-                  <button
-                    onClick={() =>
-                      handleEditProject(project)
-                    }
-                    className="flex-1 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition"
-                  >
-                    Edit
-                  </button>
+                  {canManageProjects && (
+                    <button
+                      onClick={() =>
+                        handleEditProject(project)
+                      }
+                      className="flex-1 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition"
+                    >
+                      Edit
+                    </button>
+                  )}
 
-                  {/* Delete */}
+                  {/* DELETE — OWNER + MANAGER ONLY */}
 
-                  <button
-                    onClick={() =>
-                      handleDeleteProject(
-                        project._id
-                      )
-                    }
-                    disabled={
-                      deletingId === project._id
-                    }
-                    className="flex-1 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 disabled:opacity-50 transition"
-                  >
-                    {deletingId === project._id
-                      ? "Deleting..."
-                      : "Delete"}
-                  </button>
+                  {canManageProjects && (
+                    <button
+                      onClick={() =>
+                        handleDeleteProject(
+                          project._id
+                        )
+                      }
+                      disabled={
+                        deletingId === project._id
+                      }
+                      className="flex-1 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 disabled:opacity-50 transition"
+                    >
+                      {deletingId === project._id
+                        ? "Deleting..."
+                        : "Delete"}
+                    </button>
+                  )}
 
                 </div>
 

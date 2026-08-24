@@ -13,6 +13,8 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Projects from "./pages/Projects";
 import ProjectDetails from "./pages/ProjectDetails";
+import Tasks from "./pages/Tasks";
+import TaskDetails from "./pages/TaskDetails";
 
 function App() {
   return (
@@ -20,7 +22,6 @@ function App() {
       <Routes>
 
         {/* Authentication */}
-
         <Route
           path="/login"
           element={<Login />}
@@ -32,14 +33,12 @@ function App() {
         />
 
         {/* Organization onboarding */}
-
         <Route
           path="/create-organization"
           element={<CreateOrganization />}
         />
 
         {/* Dashboard */}
-
         <Route
           path="/dashboard"
           element={<Dashboard />}
@@ -56,21 +55,30 @@ function App() {
         />
 
         {/* Projects */}
-
         <Route
           path="/projects"
           element={<Projects />}
         />
 
         {/* Project Details */}
-
         <Route
           path="/projects/:id"
           element={<ProjectDetails />}
         />
 
-        {/* Default */}
+        {/* Tasks */}
+        <Route
+          path="/tasks"
+          element={<Tasks />}
+        />
 
+        {/* Task Details */}
+        <Route
+          path="/tasks/:id"
+          element={<TaskDetails />}
+        />
+
+        {/* Default */}
         <Route
           path="/"
           element={<Navigate to="/login" replace />}
@@ -82,3 +90,4 @@ function App() {
 }
 
 export default App;
+

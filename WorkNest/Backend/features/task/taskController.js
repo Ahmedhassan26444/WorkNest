@@ -2,8 +2,8 @@ const Task = require("./taskModel");
 const Project = require("../project/projectModel");
 const User = require("../../models/User");
 
+// ================= CREATE TASK =================
 
-// Create Task
 const createTask = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -67,6 +67,12 @@ const createTask = async (req, res) => {
           message: "Assigned user not found in your organization",
         });
       }
+
+      if (assignedUser.role !== "employee") {
+        return res.status(400).json({
+          message: "Tasks can only be assigned to employees",
+        });
+      }
     }
 
     const task = await Task.create({
@@ -92,8 +98,8 @@ const createTask = async (req, res) => {
   }
 };
 
+// ================= GET TASKS =================
 
-// Get Organization Tasks
 const getTasks = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -104,9 +110,17 @@ const getTasks = async (req, res) => {
       });
     }
 
-    const tasks = await Task.find({
+    // Owner and Manager can see all organization tasks
+    // Employee can only see tasks assigned to themselves
+    let taskFilter = {
       organization: user.organization,
-    })
+    };
+
+    if (user.role === "employee") {
+      taskFilter.assignedTo = user._id;
+    }
+
+    const tasks = await Task.find(taskFilter)
       .populate("project", "name status")
       .populate("assignedTo", "name email role")
       .populate("createdBy", "name email")
@@ -123,8 +137,8 @@ const getTasks = async (req, res) => {
   }
 };
 
+// ================= GET SINGLE TASK =================
 
-// Get Single Task
 const getTask = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -149,6 +163,17 @@ const getTask = async (req, res) => {
       });
     }
 
+    // Employee can only view their assigned task
+    if (
+      user.role === "employee" &&
+      (!task.assignedTo ||
+        task.assignedTo._id.toString() !== user._id.toString())
+    ) {
+      return res.status(403).json({
+        message: "You do not have permission to view this task",
+      });
+    }
+
     res.status(200).json({
       message: "Task fetched successfully",
       task,
@@ -160,8 +185,8 @@ const getTask = async (req, res) => {
   }
 };
 
+// ================= UPDATE TASK =================
 
-// Update Task
 const updateTask = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -196,6 +221,7 @@ const updateTask = async (req, res) => {
     // Owner and Manager can update any task
     // Employee can update only their assigned task
     const isManagerOrOwner = ["owner", "manager"].includes(user.role);
+
     const isAssignedEmployee =
       user.role === "employee" &&
       task.assignedTo &&
@@ -205,6 +231,15 @@ const updateTask = async (req, res) => {
       return res.status(403).json({
         message: "You do not have permission to update this task",
       });
+    }
+
+    // Employee should not change project or assignment
+    if (user.role === "employee") {
+      if (project !== undefined || assignedTo !== undefined) {
+        return res.status(403).json({
+          message: "Employees cannot change project or task assignment",
+        });
+      }
     }
 
     // If project is being changed, validate organization
@@ -236,6 +271,12 @@ const updateTask = async (req, res) => {
         if (!assignedUser) {
           return res.status(404).json({
             message: "Assigned user not found in your organization",
+          });
+        }
+
+        if (assignedUser.role !== "employee") {
+          return res.status(400).json({
+            message: "Tasks can only be assigned to employees",
           });
         }
 
@@ -281,8 +322,8 @@ const updateTask = async (req, res) => {
   }
 };
 
+// ================= DELETE TASK =================
 
-// Delete Task
 const deleteTask = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -323,7 +364,6 @@ const deleteTask = async (req, res) => {
   }
 };
 
-
 module.exports = {
   createTask,
   getTasks,
@@ -331,3 +371,4 @@ module.exports = {
   updateTask,
   deleteTask,
 };
+
