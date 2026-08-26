@@ -15,6 +15,7 @@ import Projects from "./pages/Projects";
 import ProjectDetails from "./pages/ProjectDetails";
 import Tasks from "./pages/Tasks";
 import TaskDetails from "./pages/TaskDetails";
+import Team from "./pages/Team";
 
 function App() {
   return (
@@ -77,6 +78,10 @@ function App() {
           path="/tasks/:id"
           element={<TaskDetails />}
         />
+
+        {/* Team  */}
+
+        <Route path="/team" element={<Team />} />
 
         {/* Default */}
         <Route

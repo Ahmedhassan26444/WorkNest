@@ -5,6 +5,8 @@ const authMiddleware = require("../../middleware/authMiddleware");
 const {
   createOrganization,
   getMembers,
+  addMember,
+  deleteMember,
 } = require("./organizationController");
 
 const router = express.Router();
@@ -17,5 +19,16 @@ router.post("/", authMiddleware, createOrganization);
 
 router.get("/members", authMiddleware, getMembers);
 
-module.exports = router;
+// ================= ADD ORGANIZATION MEMBER =================
 
+router.post("/members", authMiddleware, addMember);
+
+// ================= DELETE ORGANIZATION MEMBER =================
+
+router.delete(
+  "/members/:memberId",
+  authMiddleware,
+  deleteMember
+);
+
+module.exports = router;
