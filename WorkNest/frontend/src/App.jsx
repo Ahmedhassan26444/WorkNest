@@ -1,9 +1,4 @@
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -16,83 +11,51 @@ import ProjectDetails from "./pages/ProjectDetails";
 import Tasks from "./pages/Tasks";
 import TaskDetails from "./pages/TaskDetails";
 import Team from "./pages/Team";
+import Analytics from "./pages/Analytics";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-
         {/* Authentication */}
-        <Route
-          path="/login"
-          element={<Login />}
-        />
+        <Route path="/login" element={<Login />} />
 
-        <Route
-          path="/register"
-          element={<Register />}
-        />
+        <Route path="/register" element={<Register />} />
 
         {/* Organization onboarding */}
-        <Route
-          path="/create-organization"
-          element={<CreateOrganization />}
-        />
+        <Route path="/create-organization" element={<CreateOrganization />} />
 
         {/* Dashboard */}
-        <Route
-          path="/dashboard"
-          element={<Dashboard />}
-        />
+        <Route path="/dashboard" element={<Dashboard />} />
 
-        <Route
-          path="/profile"
-          element={<Profile />}
-        />
+        <Route path="/profile" element={<Profile />} />
 
-        <Route
-          path="/settings"
-          element={<Settings />}
-        />
+        <Route path="/settings" element={<Settings />} />
 
         {/* Projects */}
-        <Route
-          path="/projects"
-          element={<Projects />}
-        />
+        <Route path="/projects" element={<Projects />} />
 
         {/* Project Details */}
-        <Route
-          path="/projects/:id"
-          element={<ProjectDetails />}
-        />
+        <Route path="/projects/:id" element={<ProjectDetails />} />
 
         {/* Tasks */}
-        <Route
-          path="/tasks"
-          element={<Tasks />}
-        />
+        <Route path="/tasks" element={<Tasks />} />
 
         {/* Task Details */}
-        <Route
-          path="/tasks/:id"
-          element={<TaskDetails />}
-        />
+        <Route path="/tasks/:id" element={<TaskDetails />} />
 
         {/* Team  */}
 
         <Route path="/team" element={<Team />} />
 
-        {/* Default */}
-        <Route
-          path="/"
-          element={<Navigate to="/login" replace />}
-        />
+        {/* Analytics */}
+        <Route path="/analytics" element={<Analytics />} />
 
+        {/* Default */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   );
 }
 
 export default App;
-
