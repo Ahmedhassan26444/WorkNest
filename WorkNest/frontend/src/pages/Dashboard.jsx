@@ -92,12 +92,23 @@ const Dashboard = () => {
 
   const totalProjects = dashboard?.projects?.total ?? 0;
   const activeProjects = dashboard?.projects?.active ?? 0;
+
   const totalTasks = dashboard?.tasks?.total ?? 0;
   const completedTasks = dashboard?.tasks?.completed ?? 0;
+
   const teamMembers = dashboard?.team?.total ?? 0;
+
+  const remainingTasks = Math.max(
+    totalTasks - completedTasks,
+    0
+  );
 
   const completionRate = totalTasks
     ? Math.round((completedTasks / totalTasks) * 100)
+    : 0;
+
+  const activeProjectRate = totalProjects
+    ? Math.round((activeProjects / totalProjects) * 100)
     : 0;
 
   // ================= UI =================
@@ -212,6 +223,7 @@ const Dashboard = () => {
             </button>
 
           </nav>
+
         </div>
 
         {/* Sidebar User */}
@@ -244,6 +256,7 @@ const Dashboard = () => {
             </button>
 
           </div>
+
         </div>
 
       </aside>
@@ -312,7 +325,7 @@ const Dashboard = () => {
 
             <div className="hidden sm:block h-8 w-px bg-slate-800"></div>
 
-            {/* PROFILE DROPDOWN */}
+            {/* Profile Dropdown */}
 
             <div
               className="relative"
@@ -386,7 +399,7 @@ const Dashboard = () => {
 
                   <div className="p-2">
 
-                    {/* PROFILE - UPDATED */}
+                    {/* Profile */}
 
                     <button
                       onClick={() => {
@@ -400,9 +413,10 @@ const Dashboard = () => {
                       <span className="text-sm">
                         Profile
                       </span>
+
                     </button>
 
-                    {/* SETTINGS */}
+                    {/* Settings */}
 
                     <button
                       onClick={() => {
@@ -416,6 +430,7 @@ const Dashboard = () => {
                       <span className="text-sm">
                         Settings
                       </span>
+
                     </button>
 
                   </div>
@@ -433,6 +448,7 @@ const Dashboard = () => {
                       <span className="text-sm font-medium">
                         Logout
                       </span>
+
                     </button>
 
                   </div>
@@ -485,17 +501,21 @@ const Dashboard = () => {
           {/* Loading */}
 
           {loading && (
+
             <div className="mb-6 bg-slate-900 border border-slate-800 rounded-xl p-4 text-slate-400">
               Loading dashboard...
             </div>
+
           )}
 
           {/* Error */}
 
           {error && (
+
             <div className="mb-6 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl p-4">
               {error}
             </div>
+
           )}
 
           {/* =================================================
@@ -634,12 +654,12 @@ const Dashboard = () => {
           </div>
 
           {/* =================================================
-              ANALYTICS
+              WORKSPACE OVERVIEW
           ================================================= */}
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 mb-8">
 
-            {/* Project Analytics */}
+            {/* Project & Task Progress */}
 
             <div className="xl:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6">
 
@@ -652,147 +672,290 @@ const Dashboard = () => {
                   </h2>
 
                   <p className="text-sm text-slate-500 mt-1">
-                    Project and task performance
+                    Quick view of your workspace progress
                   </p>
 
                 </div>
 
-                <button className="text-sm text-slate-400 hover:text-white transition">
-                  This Month ▾
+                <button
+                  onClick={() => navigate("/analytics")}
+                  className="text-sm text-blue-400 hover:text-blue-300 transition"
+                >
+                  View Analytics →
                 </button>
 
               </div>
 
-              {/* Chart */}
+              <div className="space-y-7">
 
-              <div className="h-64 flex items-end gap-3 md:gap-5">
+                {/* Project Progress */}
 
-                {[
-                  35,
-                  52,
-                  42,
-                  68,
-                  55,
-                  76,
-                  Math.max(
-                    30,
-                    Math.min(95, completionRate)
-                  ),
-                ].map((height, index) => (
+                <div>
 
-                  <div
-                    key={index}
-                    className="flex-1 h-full flex items-end"
-                  >
+                  <div className="flex items-center justify-between mb-3">
 
-                    <div className="w-full">
+                    <div>
 
-                      <div
-                        className="w-full bg-blue-500/70 hover:bg-blue-500 rounded-t-lg transition"
-                        style={{
-                          height: `${height}%`,
-                        }}
-                      ></div>
+                      <p className="text-sm font-medium">
+                        Project Progress
+                      </p>
+
+                      <p className="text-xs text-slate-500 mt-1">
+                        Active projects compared to total projects
+                      </p>
 
                     </div>
 
+                    <span className="text-sm font-semibold text-blue-400">
+                      {activeProjectRate}%
+                    </span>
+
                   </div>
 
-                ))}
+                  <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
+
+                    <div
+                      className="h-full bg-blue-500 rounded-full transition-all"
+                      style={{
+                        width: `${activeProjectRate}%`,
+                      }}
+                    ></div>
+
+                  </div>
+
+                  <div className="flex justify-between mt-2 text-xs text-slate-500">
+
+                    <span>
+                      {activeProjects} active
+                    </span>
+
+                    <span>
+                      {totalProjects} total
+                    </span>
+
+                  </div>
+
+                </div>
+
+                {/* Task Progress */}
+
+                <div>
+
+                  <div className="flex items-center justify-between mb-3">
+
+                    <div>
+
+                      <p className="text-sm font-medium">
+                        Task Progress
+                      </p>
+
+                      <p className="text-xs text-slate-500 mt-1">
+                        Completed tasks compared to total tasks
+                      </p>
+
+                    </div>
+
+                    <span className="text-sm font-semibold text-emerald-400">
+                      {completionRate}%
+                    </span>
+
+                  </div>
+
+                  <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
+
+                    <div
+                      className="h-full bg-emerald-500 rounded-full transition-all"
+                      style={{
+                        width: `${completionRate}%`,
+                      }}
+                    ></div>
+
+                  </div>
+
+                  <div className="flex justify-between mt-2 text-xs text-slate-500">
+
+                    <span>
+                      {completedTasks} completed
+                    </span>
+
+                    <span>
+                      {remainingTasks} remaining
+                    </span>
+
+                  </div>
+
+                </div>
 
               </div>
 
-              <div className="flex justify-between text-xs text-slate-600 mt-3">
+              {/* Summary */}
 
-                <span>Mon</span>
-                <span>Tue</span>
-                <span>Wed</span>
-                <span>Thu</span>
-                <span>Fri</span>
-                <span>Sat</span>
-                <span>Sun</span>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-6 border-t border-slate-800">
+
+                <div>
+
+                  <p className="text-xs text-slate-500">
+                    Projects
+                  </p>
+
+                  <p className="text-xl font-bold mt-1">
+                    {totalProjects}
+                  </p>
+
+                </div>
+
+                <div>
+
+                  <p className="text-xs text-slate-500">
+                    Active
+                  </p>
+
+                  <p className="text-xl font-bold mt-1">
+                    {activeProjects}
+                  </p>
+
+                </div>
+
+                <div>
+
+                  <p className="text-xs text-slate-500">
+                    Completed
+                  </p>
+
+                  <p className="text-xl font-bold mt-1">
+                    {completedTasks}
+                  </p>
+
+                </div>
+
+                <div>
+
+                  <p className="text-xs text-slate-500">
+                    Remaining
+                  </p>
+
+                  <p className="text-xl font-bold mt-1">
+                    {remainingTasks}
+                  </p>
+
+                </div>
 
               </div>
 
             </div>
 
-            {/* Task Overview */}
+            {/* Workspace Status */}
 
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
 
               <h2 className="text-lg font-semibold">
-                Task Overview
+                Workspace Status
               </h2>
 
               <p className="text-sm text-slate-500 mt-1">
-                Current task progress
+                Current workspace health
               </p>
 
-              <div className="flex justify-center py-8">
+              <div className="mt-8">
 
-                <div className="relative w-40 h-40">
+                {/* Completion Circle */}
 
-                  <div
-                    className="absolute inset-0 rounded-full"
-                    style={{
-                      background: `conic-gradient(#3b82f6 ${completionRate}%, #1e293b ${completionRate}% 100%)`,
-                    }}
-                  ></div>
+                <div className="flex justify-center">
 
-                  <div className="absolute inset-3 rounded-full bg-slate-900 flex flex-col items-center justify-center">
+                  <div className="relative w-40 h-40">
 
-                    <span className="text-3xl font-bold">
-                      {completionRate}%
-                    </span>
+                    <div
+                      className="absolute inset-0 rounded-full"
+                      style={{
+                        background: `conic-gradient(#3b82f6 ${completionRate}%, #1e293b ${completionRate}% 100%)`,
+                      }}
+                    ></div>
 
-                    <span className="text-xs text-slate-500">
-                      Completed
-                    </span>
+                    <div className="absolute inset-3 rounded-full bg-slate-900 flex flex-col items-center justify-center">
+
+                      <span className="text-3xl font-bold">
+                        {completionRate}%
+                      </span>
+
+                      <span className="text-xs text-slate-500 mt-1">
+                        Task Completion
+                      </span>
+
+                    </div>
 
                   </div>
 
                 </div>
 
-              </div>
+                {/* Status Details */}
 
-              <div className="space-y-3">
+                <div className="space-y-4 mt-8">
 
-                <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between">
 
-                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
 
-                    <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
 
-                    <span className="text-sm text-slate-400">
-                      Completed
+                      <span className="text-sm text-slate-400">
+                        Active Projects
+                      </span>
+
+                    </div>
+
+                    <span className="text-sm font-semibold">
+                      {activeProjects}
                     </span>
 
                   </div>
 
-                  <span className="text-sm font-medium">
-                    {completedTasks}
-                  </span>
+                  <div className="flex items-center justify-between">
 
-                </div>
+                    <div className="flex items-center gap-2">
 
-                <div className="flex items-center justify-between">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
 
-                  <div className="flex items-center gap-2">
+                      <span className="text-sm text-slate-400">
+                        Completed Tasks
+                      </span>
 
-                    <span className="w-2.5 h-2.5 rounded-full bg-slate-700"></span>
+                    </div>
 
-                    <span className="text-sm text-slate-400">
-                      Remaining
+                    <span className="text-sm font-semibold">
+                      {completedTasks}
                     </span>
 
                   </div>
 
-                  <span className="text-sm font-medium">
-                    {Math.max(
-                      totalTasks - completedTasks,
-                      0
-                    )}
-                  </span>
+                  <div className="flex items-center justify-between">
+
+                    <div className="flex items-center gap-2">
+
+                      <span className="w-2.5 h-2.5 rounded-full bg-slate-700"></span>
+
+                      <span className="text-sm text-slate-400">
+                        Remaining Tasks
+                      </span>
+
+                    </div>
+
+                    <span className="text-sm font-semibold">
+                      {remainingTasks}
+                    </span>
+
+                  </div>
+
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+
+                    <span className="text-sm text-slate-400">
+                      Team Members
+                    </span>
+
+                    <span className="text-sm font-semibold">
+                      {teamMembers}
+                    </span>
+
+                  </div>
 
                 </div>
 
@@ -803,7 +966,7 @@ const Dashboard = () => {
           </div>
 
           {/* =================================================
-              BOTTOM SECTION
+              RECENT PROJECTS + QUICK ACTIONS
           ================================================= */}
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
@@ -1021,7 +1184,7 @@ const Dashboard = () => {
                     </p>
 
                     <p className="text-xs text-slate-500 mt-1">
-                      Check workspace stats
+                      Check detailed workspace stats
                     </p>
 
                   </div>
