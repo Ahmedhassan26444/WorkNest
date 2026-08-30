@@ -6,12 +6,18 @@ import { getProjects } from "../services/projectApi";
 const Dashboard = () => {
   const navigate = useNavigate();
   const profileRef = useRef(null);
+  const searchRef = useRef(null);
 
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [projects, setProjects] = useState([]);
   const [profileOpen, setProfileOpen] = useState(false);
+
+  // ================= SEARCH =================
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
 
   // ================= USER =================
 
@@ -37,7 +43,26 @@ const Dashboard = () => {
     navigate("/login");
   };
 
-  // ================= CLOSE DROPDOWN =================
+  // ================= SEARCH RESULTS =================
+
+  const filteredProjects = projects.filter((project) => {
+    const query = searchQuery.trim().toLowerCase();
+
+    if (!query) return false;
+
+    const projectName = project.name?.toLowerCase() || "";
+    const projectDescription =
+      project.description?.toLowerCase() || "";
+    const projectStatus = project.status?.toLowerCase() || "";
+
+    return (
+      projectName.includes(query) ||
+      projectDescription.includes(query) ||
+      projectStatus.includes(query)
+    );
+  });
+
+  // ================= CLOSE DROPDOWNS =================
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -46,6 +71,13 @@ const Dashboard = () => {
         !profileRef.current.contains(event.target)
       ) {
         setProfileOpen(false);
+      }
+
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target)
+      ) {
+        setSearchOpen(false);
       }
     };
 
@@ -88,6 +120,19 @@ const Dashboard = () => {
     fetchProjects();
   }, []);
 
+  // ================= SELECT SEARCH PROJECT =================
+
+  const handleSelectProject = (project) => {
+    setSearchQuery("");
+    setSearchOpen(false);
+
+    navigate("/projects", {
+      state: {
+        selectedProjectId: project._id,
+      },
+    });
+  };
+
   // ================= DASHBOARD DATA =================
 
   const totalProjects = dashboard?.projects?.total ?? 0;
@@ -114,7 +159,7 @@ const Dashboard = () => {
   // ================= UI =================
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex">
+    <div className="flex min-h-screen bg-slate-950 text-white">
 
       {/* =====================================================
           SIDEBAR
@@ -289,7 +334,10 @@ const Dashboard = () => {
 
           {/* Search */}
 
-          <div className="hidden md:flex items-center w-80">
+          <div
+            className="hidden md:flex items-center w-80 relative"
+            ref={searchRef}
+          >
 
             <div className="w-full relative">
 
@@ -299,11 +347,109 @@ const Dashboard = () => {
 
               <input
                 type="text"
+                value={searchQuery}
+                onChange={(event) => {
+                  setSearchQuery(event.target.value);
+                  setSearchOpen(true);
+                }}
+                onFocus={() => {
+                  if (searchQuery.trim()) {
+                    setSearchOpen(true);
+                  }
+                }}
                 placeholder="Search workspace..."
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl py-2.5 pl-11 pr-4 text-sm text-white placeholder-slate-500 outline-none focus:border-blue-500 transition"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl py-2.5 pl-11 pr-10 text-sm text-white placeholder-slate-500 outline-none focus:border-blue-500 transition"
               />
 
+              {searchQuery && (
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSearchOpen(false);
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition"
+                >
+                  ×
+                </button>
+              )}
+
             </div>
+
+            {/* Search Results */}
+
+            {searchOpen && searchQuery.trim() && (
+
+              <div className="absolute top-full left-0 right-0 mt-3 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden z-50">
+
+                {filteredProjects.length > 0 ? (
+
+                  <div className="max-h-80 overflow-y-auto">
+
+                    <div className="px-4 py-3 border-b border-slate-800">
+
+                      <p className="text-xs uppercase tracking-wider text-slate-500">
+                        Projects
+                      </p>
+
+                    </div>
+
+                    {filteredProjects.slice(0, 8).map((project) => (
+
+                      <button
+                        key={project._id}
+                        onClick={() => handleSelectProject(project)}
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-800 transition text-left"
+                      >
+
+                        <div className="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0">
+                          ▣
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+
+                          <p className="text-sm font-medium truncate">
+                            {project.name}
+                          </p>
+
+                          <p className="text-xs text-slate-500 truncate mt-1">
+                            {project.description || "No description"}
+                          </p>
+
+                        </div>
+
+                        <span className="text-xs text-slate-500 capitalize shrink-0">
+                          {project.status || "planning"}
+                        </span>
+
+                      </button>
+
+                    ))}
+
+                  </div>
+
+                ) : (
+
+                  <div className="p-6 text-center">
+
+                    <div className="text-3xl mb-3">
+                      🔍
+                    </div>
+
+                    <p className="text-sm font-medium">
+                      No projects found
+                    </p>
+
+                    <p className="text-xs text-slate-500 mt-1">
+                      Try searching for another project.
+                    </p>
+
+                  </div>
+
+                )}
+
+              </div>
+
+            )}
 
           </div>
 
@@ -1049,8 +1195,7 @@ const Dashboard = () => {
                             </h3>
 
                             <p className="text-sm text-slate-500 truncate mt-1">
-                              {project.description ||
-                                "No description"}
+                              {project.description || "No description"}
                             </p>
 
                           </div>

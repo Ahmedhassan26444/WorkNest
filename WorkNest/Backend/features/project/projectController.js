@@ -1,7 +1,9 @@
 const Project = require("./projectModel");
+
 const User = require("../../models/User");
 
 // Create Project
+
 const createProject = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -45,8 +47,8 @@ const createProject = async (req, res) => {
   }
 };
 
-
 // Get Organization Projects
+
 const getProjects = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -74,8 +76,50 @@ const getProjects = async (req, res) => {
   }
 };
 
+// Search Organization Projects
+
+const searchProjects = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user || !user.organization) {
+      return res.status(400).json({
+        message: "You are not part of an organization",
+      });
+    }
+
+    const query = req.query.q?.trim();
+
+    if (!query) {
+      return res.status(400).json({
+        message: "Search query is required",
+      });
+    }
+
+    const projects = await Project.find({
+      organization: user.organization,
+      $or: [
+        { name: { $regex: query, $options: "i" } },
+        { description: { $regex: query, $options: "i" } },
+        { status: { $regex: query, $options: "i" } },
+      ],
+    })
+      .populate("createdBy", "name email")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      message: "Projects search completed successfully",
+      projects,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
 
 // Get Single Project
+
 const getProject = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -108,8 +152,8 @@ const getProject = async (req, res) => {
   }
 };
 
-
 // Update Project
+
 const updateProject = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -164,8 +208,8 @@ const updateProject = async (req, res) => {
   }
 };
 
-
 // Delete Project
+
 const deleteProject = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -205,10 +249,10 @@ const deleteProject = async (req, res) => {
   }
 };
 
-
 module.exports = {
   createProject,
   getProjects,
+  searchProjects,
   getProject,
   updateProject,
   deleteProject,

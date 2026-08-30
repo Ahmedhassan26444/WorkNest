@@ -108,3 +108,27 @@ export const deleteProject = async (id) => {
 
   return data;
 };
+
+// ================= SEARCH PROJECTS =================
+
+export const searchProjects = async (query) => {
+  const token = localStorage.getItem("token");
+
+  const response = await fetch(
+    `${API_URL}/projects/search?q=${encodeURIComponent(query)}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to search projects");
+  }
+
+  return data;
+};

@@ -1,6 +1,7 @@
 const express = require("express");
 
 const authMiddleware = require("../../middleware/authMiddleware");
+
 const roleMiddleware = require("../../middleware/roleMiddleware");
 
 const {
@@ -9,13 +10,14 @@ const {
   getProject,
   updateProject,
   deleteProject,
+  searchProjects,
 } = require("./projectController");
 
 const router = express.Router();
 
-
 // Get all organization projects
 // Owner, Manager, Employee
+
 router.get(
   "/",
   authMiddleware,
@@ -23,9 +25,19 @@ router.get(
   getProjects
 );
 
+// Search organization projects
+// Owner, Manager, Employee
+
+router.get(
+  "/search",
+  authMiddleware,
+  roleMiddleware("owner", "manager", "employee"),
+  searchProjects
+);
 
 // Create project
 // Owner, Manager
+
 router.post(
   "/",
   authMiddleware,
@@ -33,9 +45,9 @@ router.post(
   createProject
 );
 
-
 // Get single project
 // Owner, Manager, Employee
+
 router.get(
   "/:id",
   authMiddleware,
@@ -43,9 +55,9 @@ router.get(
   getProject
 );
 
-
 // Update project
 // Owner, Manager
+
 router.put(
   "/:id",
   authMiddleware,
@@ -53,15 +65,14 @@ router.put(
   updateProject
 );
 
-
 // Delete project
 // Owner only
+
 router.delete(
   "/:id",
   authMiddleware,
   roleMiddleware("owner"),
   deleteProject
 );
-
 
 module.exports = router;
