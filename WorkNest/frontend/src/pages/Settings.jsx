@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import {
   changePassword,
   deleteAccount,
+  uploadProfilePhoto,
+  deleteProfilePhoto,
 } from "../services/userApi";
 
 const Settings = () => {
@@ -26,6 +28,14 @@ const Settings = () => {
 
   // ================= STATES =================
 
+  const [profilePhoto, setProfilePhoto] = useState(
+    user?.profilePhoto || null
+  );
+
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+  const [photoSuccess, setPhotoSuccess] = useState("");
+
   const [showPasswordForm, setShowPasswordForm] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState("");
@@ -38,6 +48,120 @@ const Settings = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
+  // ================= PROFILE PHOTO URL =================
+
+  const getProfilePhotoUrl = () => {
+    if (!profilePhoto) return null;
+
+    if (profilePhoto.startsWith("http")) {
+      return profilePhoto;
+    }
+
+    return `http://localhost:5000${profilePhoto}`;
+  };
+
+  // ================= UPLOAD PROFILE PHOTO =================
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    setPhotoError("");
+    setPhotoSuccess("");
+
+    // Check file type
+
+    if (!file.type.startsWith("image/")) {
+      setPhotoError("Please select a valid image.");
+      return;
+    }
+
+    // Check file size - 5MB
+
+    if (file.size > 5 * 1024 * 1024) {
+      setPhotoError("Image must be smaller than 5MB.");
+      return;
+    }
+
+    try {
+      setPhotoLoading(true);
+
+      const response = await uploadProfilePhoto(file);
+
+      const updatedUser = response.user;
+
+      setProfilePhoto(updatedUser.profilePhoto || null);
+
+      // Update localStorage user
+
+      const currentUser = JSON.parse(
+        localStorage.getItem("user") || "{}"
+      );
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          ...currentUser,
+          profilePhoto: updatedUser.profilePhoto || null,
+        })
+      );
+
+      setPhotoSuccess(
+        response.message || "Profile photo uploaded successfully."
+      );
+    } catch (error) {
+      setPhotoError(
+        error.message || "Failed to upload profile photo."
+      );
+    } finally {
+      setPhotoLoading(false);
+
+      // Allow selecting the same image again
+
+      e.target.value = "";
+    }
+  };
+
+  // ================= DELETE PROFILE PHOTO =================
+
+  const handleDeletePhoto = async () => {
+    setPhotoError("");
+    setPhotoSuccess("");
+
+    try {
+      setPhotoLoading(true);
+
+      const response = await deleteProfilePhoto();
+
+      setProfilePhoto(null);
+
+      // Update localStorage user
+
+      const currentUser = JSON.parse(
+        localStorage.getItem("user") || "{}"
+      );
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          ...currentUser,
+          profilePhoto: null,
+        })
+      );
+
+      setPhotoSuccess(
+        response.message || "Profile photo deleted successfully."
+      );
+    } catch (error) {
+      setPhotoError(
+        error.message || "Failed to delete profile photo."
+      );
+    } finally {
+      setPhotoLoading(false);
+    }
+  };
+
   // ================= CHANGE PASSWORD =================
 
   const handleChangePassword = async (e) => {
@@ -47,12 +171,14 @@ const Settings = () => {
     setPasswordSuccess("");
 
     // Check empty fields
+
     if (!currentPassword || !newPassword || !confirmPassword) {
       setPasswordError("Please fill in all password fields.");
       return;
     }
 
     // Check password length
+
     if (newPassword.length < 6) {
       setPasswordError(
         "New password must be at least 6 characters long."
@@ -61,6 +187,7 @@ const Settings = () => {
     }
 
     // Check password match
+
     if (newPassword !== confirmPassword) {
       setPasswordError(
         "New password and confirm password do not match."
@@ -70,8 +197,8 @@ const Settings = () => {
 
     try {
       const response = await changePassword(
-      currentPassword,
-      newPassword
+        currentPassword,
+        newPassword
       );
 
       setPasswordSuccess(
@@ -79,13 +206,13 @@ const Settings = () => {
       );
 
       // Clear fields
+
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (error) {
       setPasswordError(
-        error.response?.data?.message ||
-          "Failed to change password."
+        error.message || "Failed to change password."
       );
     }
   };
@@ -103,15 +230,16 @@ const Settings = () => {
       );
 
       // Remove logged-in user data
+
       localStorage.removeItem("token");
       localStorage.removeItem("user");
 
       // Go back to login
+
       navigate("/login");
     } catch (error) {
       setDeleteError(
-        error.response?.data?.message ||
-          "Failed to delete account."
+        error.message || "Failed to delete account."
       );
     }
   };
@@ -170,31 +298,109 @@ const Settings = () => {
 
           </div>
 
-          <div className="p-6 space-y-5">
+          <div className="p-6 space-y-6">
 
-            {/* Profile */}
+            {/* ================= PROFILE PHOTO ================= */}
 
-            <div className="flex items-center gap-4">
+            <div>
 
-              <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-xl font-bold">
-                {userName.charAt(0).toUpperCase()}
+              <label className="block text-sm text-slate-400 mb-3">
+                Profile Photo
+              </label>
+
+              <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+                      
+                {/* Avatar */}
+
+                <div className="w-20 h-20 rounded-full overflow-hidden bg-blue-600 flex items-center justify-center text-2xl font-bold shrink-0">
+
+                  {profilePhoto ? (
+                    <img
+                      src={getProfilePhotoUrl()}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    userName.charAt(0).toUpperCase()
+                  )}
+
+                </div>
+
+                {/* Photo Controls */}
+
+                <div className="flex flex-col gap-3">
+
+                  <div className="flex flex-wrap gap-3">
+
+                    {/* Add / Change Photo */}
+
+                    <label
+                      className={`px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium transition cursor-pointer ${
+                        photoLoading
+                          ? "opacity-50 pointer-events-none"
+                          : ""
+                      }`}
+                    >
+
+                      {photoLoading
+                        ? "Uploading..."
+                        : profilePhoto
+                        ? "Change Photo"
+                        : "Add Photo"}
+
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                        className="hidden"
+                        disabled={photoLoading}
+                      />
+
+                    </label>
+
+                    {/* Delete Photo */}
+
+                    {profilePhoto && (
+                      <button
+                        type="button"
+                        onClick={handleDeletePhoto}
+                        disabled={photoLoading}
+                        className="px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition font-medium disabled:opacity-50"
+                      >
+                        Delete Photo
+                      </button>
+                    )}
+
+                  </div>
+
+                  <p className="text-xs text-slate-600">
+                    JPG, PNG or other image formats. Maximum size
+                    5MB.
+                  </p>
+
+                </div>
+
               </div>
 
-              <div>
+              {/* Photo Error */}
 
-                <p className="font-semibold">
-                  {userName}
-                </p>
+              {photoError && (
+                <div className="mt-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                  {photoError}
+                </div>
+              )}
 
-                <p className="text-sm text-slate-500 capitalize">
-                  {userRole}
-                </p>
+              {/* Photo Success */}
 
-              </div>
+              {photoSuccess && (
+                <div className="mt-4 p-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-sm">
+                  {photoSuccess}
+                </div>
+              )}
 
             </div>
 
-            {/* Name */}
+            {/* ================= NAME ================= */}
 
             <div>
 
@@ -211,7 +417,7 @@ const Settings = () => {
 
             </div>
 
-            {/* Email */}
+            {/* ================= EMAIL ================= */}
 
             <div>
 
@@ -228,7 +434,7 @@ const Settings = () => {
 
             </div>
 
-            {/* Role */}
+            {/* ================= ROLE ================= */}
 
             <div>
 

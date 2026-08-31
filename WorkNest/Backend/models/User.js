@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -26,6 +25,11 @@ const userSchema = new mongoose.Schema(
     organization: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Organization",
+      default: null,
+    },
+
+    profilePhoto: {
+      type: String,
       default: null,
     },
   },
