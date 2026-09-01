@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getProfile, updateProfile } from "../services/userApi";
-
+import croppedCircle from "../assets/cropped_circle_image.png";
 const Profile = () => {
   const navigate = useNavigate();
 
@@ -13,7 +13,6 @@ const Profile = () => {
   const [success, setSuccess] = useState("");
 
   // ================= GET PROFILE =================
-
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -35,7 +34,6 @@ const Profile = () => {
   }, []);
 
   // ================= UPDATE PROFILE =================
-
   const handleUpdateProfile = async () => {
     try {
       setSaving(true);
@@ -63,6 +61,7 @@ const Profile = () => {
             JSON.stringify({
               ...localUser,
               name: data.user.name,
+              profilePhoto: data.user.profilePhoto,
             })
           );
         } catch {
@@ -79,7 +78,6 @@ const Profile = () => {
   };
 
   // ================= LOGOUT =================
-
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -88,14 +86,15 @@ const Profile = () => {
   };
 
   // ================= USER DATA =================
-
   const userName = user?.name || "User";
   const userEmail = user?.email || "No email";
   const userRole = user?.role || "Owner";
   const userInitial = userName.charAt(0).toUpperCase();
 
-  // ================= LOADING =================
+  // Profile photo
+  const profilePhoto = user?.profilePhoto;
 
+  // ================= LOADING =================
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
@@ -105,13 +104,11 @@ const Profile = () => {
   }
 
   // ================= UI =================
-
   return (
     <div className="min-h-screen bg-slate-950 text-white">
 
       {/* Header */}
       <header className="h-20 border-b border-slate-800 bg-slate-950 flex items-center justify-between px-5 md:px-8">
-
         <div className="flex items-center gap-4">
 
           <button
@@ -139,7 +136,6 @@ const Profile = () => {
         >
           Logout
         </button>
-
       </header>
 
       {/* Content */}
@@ -147,7 +143,6 @@ const Profile = () => {
 
         {/* Page Heading */}
         <div className="mb-8">
-
           <p className="text-sm text-blue-400 font-medium mb-2">
             Account
           </p>
@@ -159,7 +154,6 @@ const Profile = () => {
           <p className="text-slate-400 mt-2">
             View and update your WorkNest account information.
           </p>
-
         </div>
 
         {/* Error */}
@@ -184,12 +178,22 @@ const Profile = () => {
 
             <div className="flex items-center gap-5">
 
-              <div className="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center text-3xl font-bold">
-                {userInitial}
+              {/* PROFILE AVATAR */}
+              <div className="w-20 h-20 rounded-full overflow-hidden bg-blue-600 flex items-center justify-center text-3xl font-bold shrink-0">
+
+                {profilePhoto ? (
+                  <img
+                    src={croppedCircle}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  userInitial
+                )}
+
               </div>
 
               <div>
-
                 <h2 className="text-2xl font-bold">
                   {userName}
                 </h2>
@@ -201,7 +205,6 @@ const Profile = () => {
                 <span className="inline-block mt-3 px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-xs capitalize">
                   {userRole}
                 </span>
-
               </div>
 
             </div>
@@ -219,7 +222,6 @@ const Profile = () => {
 
               {/* Name */}
               <div>
-
                 <p className="text-sm text-slate-500 mb-2">
                   Full Name
                 </p>
@@ -230,12 +232,10 @@ const Profile = () => {
                   onChange={(e) => setName(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500 transition"
                 />
-
               </div>
 
               {/* Email */}
               <div>
-
                 <p className="text-sm text-slate-500 mb-2">
                   Email Address
                 </p>
@@ -243,12 +243,10 @@ const Profile = () => {
                 <div className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-400">
                   {userEmail}
                 </div>
-
               </div>
 
               {/* Role */}
               <div>
-
                 <p className="text-sm text-slate-500 mb-2">
                   Role
                 </p>
@@ -256,12 +254,10 @@ const Profile = () => {
                 <div className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 capitalize text-slate-400">
                   {userRole}
                 </div>
-
               </div>
 
               {/* Account Status */}
               <div>
-
                 <p className="text-sm text-slate-500 mb-2">
                   Account Status
                 </p>
@@ -269,7 +265,6 @@ const Profile = () => {
                 <div className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-emerald-400">
                   ● Active
                 </div>
-
               </div>
 
             </div>
@@ -307,11 +302,8 @@ const Profile = () => {
             </div>
 
           </div>
-
         </div>
-
       </main>
-
     </div>
   );
 };
