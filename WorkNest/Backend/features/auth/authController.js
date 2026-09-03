@@ -2,14 +2,37 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const fs = require("fs");
 const path = require("path");
+
 const User = require("../../models/User");
-// Register User
+const Organization = require("../../models/Organization");
+
+// ======================================================
+// Register User + Create Organization
+// ======================================================
+
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const {
+      name,
+      email,
+      password,
+      organizationName,
+    } = req.body;
+
+    // Validate required fields
+    if (
+      !name ||
+      !email ||
+      !password ||
+      !organizationName
+    ) {
+      return res.status(400).json({
+        message:
+          "Name, email, password and organization name are required",
+      });
+    }
 
     // Check if user already exists
-
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
@@ -19,43 +42,86 @@ const registerUser = async (req, res) => {
     }
 
     // Hash password
-
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
+    // --------------------------------------------------
+    // 1. Create User
+    // --------------------------------------------------
 
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
+      role: "owner",
+      organization: null,
     });
 
-    res.status(201).json({
-      message: "User registered successfully",
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        organization: user.organization || null,
-        profilePhoto: user.profilePhoto || null,
-      },
-    });
+    try {
+      // ------------------------------------------------
+      // 2. Create Organization
+      // ------------------------------------------------
+
+      const organization = await Organization.create({
+        name: organizationName,
+        owner: user._id,
+      });
+
+      // ------------------------------------------------
+      // 3. Connect User with Organization
+      // ------------------------------------------------
+
+      user.organization = organization._id;
+
+      await user.save();
+
+      // ------------------------------------------------
+      // 4. Send Response
+      // ------------------------------------------------
+
+      return res.status(201).json({
+        message:
+          "Account and organization created successfully",
+
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          organization: user.organization,
+          profilePhoto: user.profilePhoto || null,
+        },
+
+        organization: {
+          id: organization._id,
+          name: organization.name,
+          owner: organization.owner,
+        },
+      });
+    } catch (organizationError) {
+      // If organization creation fails,
+      // remove the newly created user
+      await User.findByIdAndDelete(user._id);
+
+      throw organizationError;
+    }
   } catch (error) {
+    console.error("Registration Error:", error);
+
     res.status(500).json({
       message: error.message,
     });
   }
 };
 
+// ======================================================
 // Login User
+// ======================================================
 
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
     // Check user exists
-
     const user = await User.findOne({ email });
 
     if (!user) {
@@ -65,7 +131,6 @@ const loginUser = async (req, res) => {
     }
 
     // Compare password
-
     const isMatch = await bcrypt.compare(
       password,
       user.password
@@ -78,7 +143,6 @@ const loginUser = async (req, res) => {
     }
 
     // Generate JWT
-
     const token = jwt.sign(
       {
         id: user._id,
@@ -94,7 +158,9 @@ const loginUser = async (req, res) => {
 
     res.status(200).json({
       message: "Login successful",
+
       token,
+
       user: {
         id: user._id,
         name: user.name,
@@ -111,7 +177,9 @@ const loginUser = async (req, res) => {
   }
 };
 
+// ======================================================
 // Update Profile
+// ======================================================
 
 const updateProfile = async (req, res) => {
   try {
@@ -136,7 +204,9 @@ const updateProfile = async (req, res) => {
   }
 };
 
+// ======================================================
 // Upload Profile Photo
+// ======================================================
 
 const uploadProfilePhoto = async (req, res) => {
   try {
@@ -155,7 +225,6 @@ const uploadProfilePhoto = async (req, res) => {
     }
 
     // Delete old photo if it exists
-
     if (user.profilePhoto) {
       const oldPhotoPath = path.join(
         __dirname,
@@ -169,12 +238,12 @@ const uploadProfilePhoto = async (req, res) => {
     }
 
     // Save new photo path
-
     user.profilePhoto = `/uploads/${req.file.filename}`;
 
     await user.save();
 
     const userResponse = user.toObject();
+
     delete userResponse.password;
 
     res.status(200).json({
@@ -188,7 +257,9 @@ const uploadProfilePhoto = async (req, res) => {
   }
 };
 
+// ======================================================
 // Delete Profile Photo
+// ======================================================
 
 const deleteProfilePhoto = async (req, res) => {
   try {
@@ -221,6 +292,7 @@ const deleteProfilePhoto = async (req, res) => {
     await user.save();
 
     const userResponse = user.toObject();
+
     delete userResponse.password;
 
     res.status(200).json({
@@ -234,14 +306,18 @@ const deleteProfilePhoto = async (req, res) => {
   }
 };
 
+// ======================================================
 // Change Password
+// ======================================================
 
 const changePassword = async (req, res) => {
   try {
-    const { oldPassword, newPassword } = req.body;
+    const {
+      oldPassword,
+      newPassword,
+    } = req.body;
 
     // Find current user
-
     const user = await User.findById(req.user._id);
 
     if (!user) {
@@ -251,7 +327,6 @@ const changePassword = async (req, res) => {
     }
 
     // Check old password
-
     const isMatch = await bcrypt.compare(
       oldPassword,
       user.password
@@ -264,7 +339,6 @@ const changePassword = async (req, res) => {
     }
 
     // Hash new password
-
     const hashedPassword = await bcrypt.hash(
       newPassword,
       10
@@ -284,7 +358,9 @@ const changePassword = async (req, res) => {
   }
 };
 
+// ======================================================
 // Delete Account
+// ======================================================
 
 const deleteAccount = async (req, res) => {
   try {
@@ -307,6 +383,10 @@ const deleteAccount = async (req, res) => {
     });
   }
 };
+
+// ======================================================
+// Exports
+// ======================================================
 
 module.exports = {
   registerUser,

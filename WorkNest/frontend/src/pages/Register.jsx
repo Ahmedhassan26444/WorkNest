@@ -7,6 +7,9 @@ const Register = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [organizationName, setOrganizationName] =
+    useState("");
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -23,13 +26,16 @@ const Register = () => {
         "http://localhost:5000/api/auth/register",
         {
           method: "POST",
+
           headers: {
             "Content-Type": "application/json",
           },
+
           body: JSON.stringify({
             name,
             email,
             password,
+            organizationName,
           }),
         }
       );
@@ -37,14 +43,18 @@ const Register = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Registration failed");
+        throw new Error(
+          data.message || "Registration failed"
+        );
       }
 
-      setSuccess("Account created successfully!");
+      setSuccess(
+        "Account and organization created successfully!"
+      );
 
       setTimeout(() => {
         navigate("/login");
-      }, 1000);
+      }, 1500);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -75,12 +85,12 @@ const Register = () => {
           </h2>
 
           <p className="text-slate-400 mt-1 mb-6">
-            Get started with WorkNest
+            Create your WorkNest workspace
           </p>
 
           <form onSubmit={handleRegister}>
 
-            {/* Name */}
+            {/* Full Name */}
             <div className="mb-4">
               <label className="block text-sm text-slate-300 mb-2">
                 Full Name
@@ -89,7 +99,9 @@ const Register = () => {
               <input
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) =>
+                  setName(e.target.value)
+                }
                 placeholder="Ahmed Hassan"
                 required
                 className="w-full px-4 py-3 rounded-lg bg-slate-950 border border-slate-700 text-white outline-none focus:border-blue-500"
@@ -105,7 +117,9 @@ const Register = () => {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) =>
+                  setEmail(e.target.value)
+                }
                 placeholder="you@example.com"
                 required
                 className="w-full px-4 py-3 rounded-lg bg-slate-950 border border-slate-700 text-white outline-none focus:border-blue-500"
@@ -113,7 +127,7 @@ const Register = () => {
             </div>
 
             {/* Password */}
-            <div className="mb-6">
+            <div className="mb-4">
               <label className="block text-sm text-slate-300 mb-2">
                 Password
               </label>
@@ -121,12 +135,37 @@ const Register = () => {
               <input
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) =>
+                  setPassword(e.target.value)
+                }
                 placeholder="••••••••"
                 required
                 minLength={6}
                 className="w-full px-4 py-3 rounded-lg bg-slate-950 border border-slate-700 text-white outline-none focus:border-blue-500"
               />
+            </div>
+
+            {/* Organization Name */}
+            <div className="mb-6">
+              <label className="block text-sm text-slate-300 mb-2">
+                Organization Name
+              </label>
+
+              <input
+                type="text"
+                value={organizationName}
+                onChange={(e) =>
+                  setOrganizationName(e.target.value)
+                }
+                placeholder="Your Company"
+                required
+                className="w-full px-4 py-3 rounded-lg bg-slate-950 border border-slate-700 text-white outline-none focus:border-blue-500"
+              />
+
+              <p className="text-xs text-slate-500 mt-2">
+                You will become the owner of this
+                organization.
+              </p>
             </div>
 
             {/* Error */}
@@ -149,22 +188,24 @@ const Register = () => {
               disabled={loading}
               className="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold transition"
             >
-              {loading ? "Creating account..." : "Create Account"}
+              {loading
+                ? "Creating workspace..."
+                : "Create Account"}
             </button>
-
           </form>
 
           {/* Login */}
           <p className="text-center text-sm text-slate-400 mt-6">
             Already have an account?{" "}
+
             <button
+              type="button"
               onClick={() => navigate("/login")}
               className="text-blue-500 hover:text-blue-400"
             >
               Sign in
             </button>
           </p>
-
         </div>
       </div>
     </div>
@@ -172,3 +213,4 @@ const Register = () => {
 };
 
 export default Register;
+
