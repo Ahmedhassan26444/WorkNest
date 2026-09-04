@@ -7,30 +7,25 @@ const Register = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [organizationName, setOrganizationName] =
-    useState("");
+  const [organizationName, setOrganizationName] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const handleRegister = async (e) => {
     e.preventDefault();
 
     setLoading(true);
     setError("");
-    setSuccess("");
 
     try {
       const response = await fetch(
         "http://localhost:5000/api/auth/register",
         {
           method: "POST",
-
           headers: {
             "Content-Type": "application/json",
           },
-
           body: JSON.stringify({
             name,
             email,
@@ -48,13 +43,17 @@ const Register = () => {
         );
       }
 
-      setSuccess(
-        "Account and organization created successfully!"
+      // Save JWT token
+      localStorage.setItem("token", data.token);
+
+      // Save logged-in user
+      localStorage.setItem(
+        "user",
+        JSON.stringify(data.user)
       );
 
-      setTimeout(() => {
-        navigate("/login");
-      }, 1500);
+      // Directly go to Dashboard
+      navigate("/dashboard");
     } catch (error) {
       setError(error.message);
     } finally {
@@ -99,9 +98,7 @@ const Register = () => {
               <input
                 type="text"
                 value={name}
-                onChange={(e) =>
-                  setName(e.target.value)
-                }
+                onChange={(e) => setName(e.target.value)}
                 placeholder="Ahmed Hassan"
                 required
                 className="w-full px-4 py-3 rounded-lg bg-slate-950 border border-slate-700 text-white outline-none focus:border-blue-500"
@@ -117,9 +114,7 @@ const Register = () => {
               <input
                 type="email"
                 value={email}
-                onChange={(e) =>
-                  setEmail(e.target.value)
-                }
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
                 className="w-full px-4 py-3 rounded-lg bg-slate-950 border border-slate-700 text-white outline-none focus:border-blue-500"
@@ -135,9 +130,7 @@ const Register = () => {
               <input
                 type="password"
                 value={password}
-                onChange={(e) =>
-                  setPassword(e.target.value)
-                }
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
                 minLength={6}
@@ -163,8 +156,7 @@ const Register = () => {
               />
 
               <p className="text-xs text-slate-500 mt-2">
-                You will become the owner of this
-                organization.
+                You will become the owner of this organization.
               </p>
             </div>
 
@@ -172,13 +164,6 @@ const Register = () => {
             {error && (
               <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                 {error}
-              </div>
-            )}
-
-            {/* Success */}
-            {success && (
-              <div className="mb-4 p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm">
-                {success}
               </div>
             )}
 
@@ -206,6 +191,7 @@ const Register = () => {
               Sign in
             </button>
           </p>
+
         </div>
       </div>
     </div>
@@ -213,4 +199,3 @@ const Register = () => {
 };
 
 export default Register;
-

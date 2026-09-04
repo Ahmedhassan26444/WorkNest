@@ -12,6 +12,7 @@ const projectRoutes = require("./features/project/projectRoutes");
 const taskRoutes = require("./features/task/taskRoutes");
 const dashboardRoutes = require("./features/dashboard/dashboardRoutes");
 const analyticsRoutes = require("./features/analytics/analyticsRoutes");
+const notificationRoutes = require("./features/notification/notificationRoutes");
 const app = express();
 
 
@@ -33,7 +34,7 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/analytics", analyticsRoutes);
-
+app.use("/api/notifications", notificationRoutes);
 
 // Test route
 app.get("/", (req, res) => {
