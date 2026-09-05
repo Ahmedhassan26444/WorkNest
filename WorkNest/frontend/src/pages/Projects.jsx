@@ -16,8 +16,12 @@ const Projects = () => {
   const user = JSON.parse(localStorage.getItem("user"));
   const userRole = user?.role;
 
+  // Owner + Manager can create and edit
   const canManageProjects =
     userRole === "owner" || userRole === "manager";
+
+  // Only Owner can delete
+  const canDeleteProjects = userRole === "owner";
 
   // ================= STATES =================
 
@@ -113,15 +117,12 @@ const Projects = () => {
         data.message || "Project created successfully."
       );
 
-      // Clear form
       setName("");
       setDescription("");
       setStatus("planning");
       setShowCreateForm(false);
     } catch (error) {
-      setError(
-        error.message || "Failed to create project"
-      );
+      setError(error.message || "Failed to create project");
     } finally {
       setCreating(false);
     }
@@ -140,7 +141,9 @@ const Projects = () => {
     setError("");
     setSuccess("");
 
+    setShowCreateForm(false);
     setEditingProject(project);
+
     setEditName(project.name || "");
     setEditDescription(project.description || "");
     setEditStatus(project.status || "planning");
@@ -173,16 +176,12 @@ const Projects = () => {
     try {
       setUpdating(true);
 
-      const data = await updateProject(
-        editingProject._id,
-        {
-          name: editName.trim(),
-          description: editDescription.trim(),
-          status: editStatus,
-        }
-      );
+      const data = await updateProject(editingProject._id, {
+        name: editName.trim(),
+        description: editDescription.trim(),
+        status: editStatus,
+      });
 
-      // Update project in UI
       setProjects((prevProjects) =>
         prevProjects.map((project) =>
           project._id === editingProject._id
@@ -195,15 +194,12 @@ const Projects = () => {
         data.message || "Project updated successfully."
       );
 
-      // Close edit form
       setEditingProject(null);
       setEditName("");
       setEditDescription("");
       setEditStatus("planning");
     } catch (error) {
-      setError(
-        error.message || "Failed to update project"
-      );
+      setError(error.message || "Failed to update project");
     } finally {
       setUpdating(false);
     }
@@ -222,9 +218,9 @@ const Projects = () => {
   // ================= DELETE PROJECT =================
 
   const handleDeleteProject = async (id) => {
-    if (!canManageProjects) {
+    if (!canDeleteProjects) {
       setError(
-        "Access denied. You do not have permission to delete projects."
+        "Access denied. Only the organization owner can delete projects."
       );
       return;
     }
@@ -245,18 +241,14 @@ const Projects = () => {
       const data = await deleteProject(id);
 
       setProjects((prevProjects) =>
-        prevProjects.filter(
-          (project) => project._id !== id
-        )
+        prevProjects.filter((project) => project._id !== id)
       );
 
       setSuccess(
         data.message || "Project deleted successfully."
       );
     } catch (error) {
-      setError(
-        error.message || "Failed to delete project"
-      );
+      setError(error.message || "Failed to delete project");
     } finally {
       setDeletingId(null);
     }
@@ -264,8 +256,8 @@ const Projects = () => {
 
   // ================= STATUS STYLE =================
 
-  const getStatusStyle = (status) => {
-    switch (status) {
+  const getStatusStyle = (projectStatus) => {
+    switch (projectStatus) {
       case "active":
         return "bg-green-500/10 text-green-400 border-green-500/20";
 
@@ -288,7 +280,6 @@ const Projects = () => {
       {/* ================= HEADER ================= */}
 
       <header className="h-20 border-b border-slate-800 bg-slate-950 flex items-center justify-between px-5 md:px-8">
-
         <div className="flex items-center gap-4">
 
           <button
@@ -307,10 +298,7 @@ const Projects = () => {
               Manage your organization projects
             </p>
           </div>
-
         </div>
-
-        {/* ONLY OWNER AND MANAGER */}
 
         {canManageProjects && (
           <button
@@ -325,17 +313,13 @@ const Projects = () => {
             + New Project
           </button>
         )}
-
       </header>
 
       {/* ================= CONTENT ================= */}
 
       <main className="max-w-7xl mx-auto p-5 md:p-8">
 
-        {/* PAGE HEADING */}
-
         <div className="mb-8">
-
           <p className="text-sm text-blue-400 font-medium mb-2">
             Workspace
           </p>
@@ -349,7 +333,6 @@ const Projects = () => {
               ? "Create and manage projects for your organization."
               : "View projects in your organization."}
           </p>
-
         </div>
 
         {/* ================= MESSAGES ================= */}
@@ -372,7 +355,6 @@ const Projects = () => {
           <section className="mb-8 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
 
             <div className="p-6 border-b border-slate-800">
-
               <h2 className="text-lg font-semibold">
                 Create New Project
               </h2>
@@ -380,7 +362,6 @@ const Projects = () => {
               <p className="text-sm text-slate-500 mt-1">
                 Add a new project to your organization.
               </p>
-
             </div>
 
             <form
@@ -388,10 +369,7 @@ const Projects = () => {
               className="p-6 space-y-5"
             >
 
-              {/* Project Name */}
-
               <div>
-
                 <label className="block text-sm text-slate-400 mb-2">
                   Project Name
                 </label>
@@ -399,19 +377,13 @@ const Projects = () => {
                 <input
                   type="text"
                   value={name}
-                  onChange={(e) =>
-                    setName(e.target.value)
-                  }
+                  onChange={(e) => setName(e.target.value)}
                   placeholder="Enter project name"
                   className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-600 outline-none focus:border-blue-500"
                 />
-
               </div>
 
-              {/* Description */}
-
               <div>
-
                 <label className="block text-sm text-slate-400 mb-2">
                   Description
                 </label>
@@ -425,46 +397,24 @@ const Projects = () => {
                   rows="4"
                   className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-600 outline-none focus:border-blue-500 resize-none"
                 />
-
               </div>
 
-              {/* Status */}
-
               <div>
-
                 <label className="block text-sm text-slate-400 mb-2">
                   Status
                 </label>
 
                 <select
                   value={status}
-                  onChange={(e) =>
-                    setStatus(e.target.value)
-                  }
+                  onChange={(e) => setStatus(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white outline-none focus:border-blue-500"
                 >
-
-                  <option value="planning">
-                    Planning
-                  </option>
-
-                  <option value="active">
-                    Active
-                  </option>
-
-                  <option value="completed">
-                    Completed
-                  </option>
-
-                  <option value="on-hold">
-                    On Hold
-                  </option>
-
+                  <option value="planning">Planning</option>
+                  <option value="active">Active</option>
+                  <option value="completed">Completed</option>
+                  <option value="on-hold">On Hold</option>
                 </select>
-
               </div>
-
-              {/* Buttons */}
 
               <div className="flex flex-wrap gap-3">
 
@@ -473,9 +423,7 @@ const Projects = () => {
                   disabled={creating}
                   className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium transition"
                 >
-                  {creating
-                    ? "Creating..."
-                    : "Create Project"}
+                  {creating ? "Creating..." : "Create Project"}
                 </button>
 
                 <button
@@ -493,9 +441,7 @@ const Projects = () => {
                 </button>
 
               </div>
-
             </form>
-
           </section>
         )}
 
@@ -505,7 +451,6 @@ const Projects = () => {
           <section className="mb-8 bg-slate-900 border border-blue-500/20 rounded-2xl overflow-hidden">
 
             <div className="p-6 border-b border-slate-800">
-
               <h2 className="text-lg font-semibold">
                 Edit Project
               </h2>
@@ -513,7 +458,6 @@ const Projects = () => {
               <p className="text-sm text-slate-500 mt-1">
                 Update your project information.
               </p>
-
             </div>
 
             <form
@@ -521,10 +465,7 @@ const Projects = () => {
               className="p-6 space-y-5"
             >
 
-              {/* Project Name */}
-
               <div>
-
                 <label className="block text-sm text-slate-400 mb-2">
                   Project Name
                 </label>
@@ -538,13 +479,9 @@ const Projects = () => {
                   placeholder="Enter project name"
                   className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-600 outline-none focus:border-blue-500"
                 />
-
               </div>
 
-              {/* Description */}
-
               <div>
-
                 <label className="block text-sm text-slate-400 mb-2">
                   Description
                 </label>
@@ -558,13 +495,9 @@ const Projects = () => {
                   rows="4"
                   className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-600 outline-none focus:border-blue-500 resize-none"
                 />
-
               </div>
 
-              {/* Status */}
-
               <div>
-
                 <label className="block text-sm text-slate-400 mb-2">
                   Status
                 </label>
@@ -576,28 +509,12 @@ const Projects = () => {
                   }
                   className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white outline-none focus:border-blue-500"
                 >
-
-                  <option value="planning">
-                    Planning
-                  </option>
-
-                  <option value="active">
-                    Active
-                  </option>
-
-                  <option value="completed">
-                    Completed
-                  </option>
-
-                  <option value="on-hold">
-                    On Hold
-                  </option>
-
+                  <option value="planning">Planning</option>
+                  <option value="active">Active</option>
+                  <option value="completed">Completed</option>
+                  <option value="on-hold">On Hold</option>
                 </select>
-
               </div>
-
-              {/* Buttons */}
 
               <div className="flex flex-wrap gap-3">
 
@@ -606,9 +523,7 @@ const Projects = () => {
                   disabled={updating}
                   className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium transition"
                 >
-                  {updating
-                    ? "Updating..."
-                    : "Update Project"}
+                  {updating ? "Updating..." : "Update Project"}
                 </button>
 
                 <button
@@ -620,26 +535,19 @@ const Projects = () => {
                 </button>
 
               </div>
-
             </form>
-
           </section>
         )}
 
         {/* ================= PROJECTS ================= */}
 
         {loading ? (
-
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 text-center">
-
             <p className="text-slate-400">
               Loading projects...
             </p>
-
           </div>
-
         ) : projects.length === 0 ? (
-
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 text-center">
 
             <div className="text-5xl mb-4">
@@ -656,8 +564,6 @@ const Projects = () => {
                 : "No projects are available."}
             </p>
 
-            {/* ONLY OWNER AND MANAGER */}
-
             {canManageProjects && (
               <button
                 onClick={() => {
@@ -672,13 +578,10 @@ const Projects = () => {
             )}
 
           </div>
-
         ) : (
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
 
             {projects.map((project) => (
-
               <div
                 key={project._id}
                 className="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-slate-700 transition"
@@ -689,17 +592,14 @@ const Projects = () => {
                 <div className="flex items-start justify-between gap-4">
 
                   <div>
-
                     <h2 className="text-lg font-semibold">
                       {project.name}
                     </h2>
 
                     <p className="text-xs text-slate-500 mt-1">
                       Created by{" "}
-                      {project.createdBy?.name ||
-                        "Unknown"}
+                      {project.createdBy?.name || "Unknown"}
                     </p>
-
                   </div>
 
                   <span
@@ -714,7 +614,7 @@ const Projects = () => {
 
                 {/* Description */}
 
-                <p className="text-sm text-slate-400 mt-5 min-h-48px">
+                <p className="text-sm text-slate-400 mt-5 min-h-12">
                   {project.description ||
                     "No description provided."}
                 </p>
@@ -738,9 +638,7 @@ const Projects = () => {
 
                   <button
                     onClick={() =>
-                      navigate(
-                        `/projects/${project._id}`
-                      )
+                      navigate(`/projects/${project._id}`)
                     }
                     className={
                       canManageProjects
@@ -764,18 +662,14 @@ const Projects = () => {
                     </button>
                   )}
 
-                  {/* DELETE — OWNER + MANAGER ONLY */}
+                  {/* DELETE — OWNER ONLY */}
 
-                  {canManageProjects && (
+                  {canDeleteProjects && (
                     <button
                       onClick={() =>
-                        handleDeleteProject(
-                          project._id
-                        )
+                        handleDeleteProject(project._id)
                       }
-                      disabled={
-                        deletingId === project._id
-                      }
+                      disabled={deletingId === project._id}
                       className="flex-1 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 disabled:opacity-50 transition"
                     >
                       {deletingId === project._id
@@ -785,17 +679,13 @@ const Projects = () => {
                   )}
 
                 </div>
-
               </div>
-
             ))}
 
           </div>
-
         )}
 
       </main>
-
     </div>
   );
 };

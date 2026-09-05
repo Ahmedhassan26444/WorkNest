@@ -1,6 +1,6 @@
 const Project = require("./projectModel");
-
 const User = require("../../models/User");
+const Notification = require("../../models/Notification");
 
 // Create Project
 
@@ -35,6 +35,26 @@ const createProject = async (req, res) => {
       organization: user.organization,
       createdBy: user._id,
     });
+
+    // Create notifications for other organization members
+
+    const members = await User.find({
+      organization: user.organization,
+      _id: { $ne: user._id },
+    });
+
+    const notifications = members.map((member) => ({
+      user: member._id,
+      organization: user.organization,
+      type: "project_created",
+      title: "New Project Created",
+      message: `${user.name} created a new project "${project.name}"`,
+      relatedProject: project._id,
+    }));
+
+    if (notifications.length > 0) {
+      await Notification.insertMany(notifications);
+    }
 
     res.status(201).json({
       message: "Project created successfully",
@@ -237,6 +257,29 @@ const deleteProject = async (req, res) => {
       });
     }
 
+    // Save project name before deleting
+    const projectName = project.name;
+
+    // Get other organization members
+    const members = await User.find({
+      organization: user.organization,
+      _id: { $ne: user._id },
+    });
+
+    // Create notifications for other members
+    const notifications = members.map((member) => ({
+      user: member._id,
+      organization: user.organization,
+      type: "project_deleted",
+      title: "Project Deleted",
+      message: `${user.name} deleted the project "${projectName}"`,
+    }));
+
+    if (notifications.length > 0) {
+      await Notification.insertMany(notifications);
+    }
+
+    // Delete project
     await project.deleteOne();
 
     res.status(200).json({

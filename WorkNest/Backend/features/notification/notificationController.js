@@ -39,19 +39,11 @@ const getUnreadCount = async (req, res) => {
 
 const markAsRead = async (req, res) => {
   try {
-    const notification = await Notification.findOneAndUpdate(
-      {
-        _id: req.params.id,
-        user: req.user._id,
-        organization: req.user.organization,
-      },
-      {
-        isRead: true,
-      },
-      {
-        new: true,
-      }
-    );
+    const notification = await Notification.findOneAndDelete({
+      _id: req.params.id,
+      user: req.user._id,
+      organization: req.user.organization,
+    });
 
     if (!notification) {
       return res.status(404).json({
@@ -60,7 +52,7 @@ const markAsRead = async (req, res) => {
     }
 
     res.status(200).json({
-      message: "Notification marked as read",
+      message: "Notification removed",
       notification,
     });
   } catch (error) {
@@ -69,7 +61,6 @@ const markAsRead = async (req, res) => {
     });
   }
 };
-
 const markAllAsRead = async (req, res) => {
   try {
     await Notification.updateMany(

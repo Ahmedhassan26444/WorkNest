@@ -1,6 +1,8 @@
+
 const Task = require("./taskModel");
 const Project = require("../project/projectModel");
 const User = require("../../models/User");
+const Notification = require("../../models/Notification");
 
 // ================= CREATE TASK =================
 
@@ -86,6 +88,19 @@ const createTask = async (req, res) => {
       assignedTo: assignedTo || null,
       createdBy: user._id,
     });
+
+    // Create notification for assigned employee
+    if (assignedTo) {
+      await Notification.create({
+        user: assignedTo,
+        organization: user.organization,
+        type: "task_assigned",
+        title: "New Task Assigned",
+        message: `${user.name} assigned you a new task "${task.title}"`,
+        relatedTask: task._id,
+        relatedProject: task.project,
+      });
+    }
 
     res.status(201).json({
       message: "Task created successfully",
@@ -218,6 +233,12 @@ const updateTask = async (req, res) => {
       assignedTo,
     } = req.body;
 
+    // Save old values before making changes
+    const oldStatus = task.status;
+    const oldAssignedTo = task.assignedTo
+      ? task.assignedTo.toString()
+      : null;
+
     // Owner and Manager can update any task
     // Employee can update only their assigned task
     const isManagerOrOwner = ["owner", "manager"].includes(user.role);
@@ -306,6 +327,47 @@ const updateTask = async (req, res) => {
 
     await task.save();
 
+    // ================= TASK ASSIGNMENT NOTIFICATION =================
+
+    const newAssignedTo = task.assignedTo
+      ? task.assignedTo.toString()
+      : null;
+
+    if (
+      newAssignedTo &&
+      newAssignedTo !== oldAssignedTo &&
+      newAssignedTo !== user._id.toString()
+    ) {
+      await Notification.create({
+        user: task.assignedTo,
+        organization: user.organization,
+        type: "task_assigned",
+        title: "Task Assigned",
+        message: `${user.name} assigned you the task "${task.title}"`,
+        relatedTask: task._id,
+        relatedProject: task.project,
+      });
+    }
+
+    // ================= STATUS CHANGE NOTIFICATION =================
+
+    if (
+      status !== undefined &&
+      oldStatus !== task.status &&
+      task.createdBy &&
+      task.createdBy.toString() !== user._id.toString()
+    ) {
+      await Notification.create({
+        user: task.createdBy,
+        organization: user.organization,
+        type: "task_status_changed",
+        title: "Task Status Updated",
+        message: `${user.name} changed the status of "${task.title}" from "${oldStatus}" to "${task.status}"`,
+        relatedTask: task._id,
+        relatedProject: task.project,
+      });
+    }
+
     const updatedTask = await Task.findById(task._id)
       .populate("project", "name status")
       .populate("assignedTo", "name email role")
@@ -371,4 +433,3 @@ module.exports = {
   updateTask,
   deleteTask,
 };
-

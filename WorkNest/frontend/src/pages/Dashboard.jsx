@@ -1,24 +1,41 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import { getDashboard } from "../services/dashboardApi";
 import { getProjects } from "../services/projectApi";
+
+import {
+  getNotifications,
+  getUnreadCount,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+} from "../services/notificationApi";
 
 const Dashboard = () => {
   const navigate = useNavigate();
 
   const profileRef = useRef(null);
   const searchRef = useRef(null);
+  const notificationRef = useRef(null);
 
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [projects, setProjects] = useState([]);
+
   const [profileOpen, setProfileOpen] = useState(false);
 
   // ================= SEARCH =================
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+
+  // ================= NOTIFICATIONS =================
+
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [notificationLoading, setNotificationLoading] = useState(false);
 
   // ================= USER =================
 
@@ -35,6 +52,7 @@ const Dashboard = () => {
   const userName = user?.name || "Ahmed Hassan";
   const userRole = user?.role || "Owner";
   const userInitial = userName.charAt(0).toUpperCase();
+
   const profilePhoto = user?.profilePhoto || null;
 
   // ================= PROFILE PHOTO URL =================
@@ -42,12 +60,10 @@ const Dashboard = () => {
   const getProfilePhotoUrl = () => {
     if (!profilePhoto) return null;
 
-    // If backend already returns a complete URL
     if (profilePhoto.startsWith("http")) {
       return profilePhoto;
     }
 
-    // If backend returns /uploads/filename.jpg
     return `http://localhost:5000${profilePhoto}`;
   };
 
@@ -58,6 +74,7 @@ const Dashboard = () => {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+
     navigate("/login");
   };
 
@@ -97,6 +114,13 @@ const Dashboard = () => {
       ) {
         setSearchOpen(false);
       }
+
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target)
+      ) {
+        setNotificationOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -112,6 +136,7 @@ const Dashboard = () => {
     const fetchDashboard = async () => {
       try {
         const data = await getDashboard();
+
         setDashboard(data.dashboard);
       } catch (error) {
         setError(error.message);
@@ -129,6 +154,7 @@ const Dashboard = () => {
     const fetchProjects = async () => {
       try {
         const data = await getProjects();
+
         setProjects(data.projects || []);
       } catch (error) {
         setError(error.message);
@@ -137,6 +163,137 @@ const Dashboard = () => {
 
     fetchProjects();
   }, []);
+
+  // ================= FETCH NOTIFICATIONS =================
+
+  useEffect(() => {
+    const fetchNotificationCount = async () => {
+      try {
+        const data = await getUnreadCount();
+
+        setUnreadCount(data.count || 0);
+      } catch (error) {
+        console.error("Notification count error:", error);
+      }
+    };
+
+    fetchNotificationCount();
+
+    const interval = setInterval(fetchNotificationCount, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // ================= LOAD NOTIFICATIONS =================
+
+  const handleNotificationOpen = async () => {
+    const newState = !notificationOpen;
+
+    setNotificationOpen(newState);
+
+    if (!newState) return;
+
+    try {
+      setNotificationLoading(true);
+
+      const data = await getNotifications();
+
+      setNotifications(data.notifications || []);
+    } catch (error) {
+      console.error("Notification loading error:", error);
+    } finally {
+      setNotificationLoading(false);
+    }
+  };
+
+  // ================= MARK NOTIFICATION AS READ =================
+
+  const handleNotificationClick = async (notification) => {
+  try {
+    await markNotificationAsRead(notification._id);
+
+    // Remove notification immediately from frontend
+    setNotifications((prev) =>
+      prev.filter((item) => item._id !== notification._id)
+    );
+
+    // Update unread count only if notification was unread
+    if (!notification.isRead) {
+      setUnreadCount((prev) => Math.max(prev - 1, 0));
+    }
+
+    setNotificationOpen(false);
+  } catch (error) {
+    console.error("Remove notification error:", error);
+  }
+};
+  // ================= MARK ALL AS READ =================
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllNotificationsAsRead();
+
+      setNotifications((prev) =>
+        prev.map((notification) => ({
+          ...notification,
+          isRead: true,
+        }))
+      );
+
+      setUnreadCount(0);
+    } catch (error) {
+      console.error("Mark all notifications error:", error);
+    }
+  };
+
+  // ================= NOTIFICATION TIME =================
+
+  const formatNotificationTime = (date) => {
+    if (!date) return "";
+
+    const notificationDate = new Date(date);
+    const now = new Date();
+
+    const difference = Math.floor(
+      (now - notificationDate) / 1000
+    );
+
+    if (difference < 60) {
+      return "Just now";
+    }
+
+    if (difference < 3600) {
+      return `${Math.floor(difference / 60)}m ago`;
+    }
+
+    if (difference < 86400) {
+      return `${Math.floor(difference / 3600)}h ago`;
+    }
+
+    if (difference < 604800) {
+      return `${Math.floor(difference / 86400)}d ago`;
+    }
+
+    return notificationDate.toLocaleDateString();
+  };
+
+  // ================= NOTIFICATION ICON =================
+
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case "project_created":
+        return "📁";
+
+      case "task_assigned":
+        return "📝";
+
+      case "task_status_changed":
+        return "🔄";
+
+      default:
+        return "🔔";
+    }
+  };
 
   // ================= SELECT SEARCH PROJECT =================
 
@@ -155,8 +312,10 @@ const Dashboard = () => {
 
   const totalProjects = dashboard?.projects?.total ?? 0;
   const activeProjects = dashboard?.projects?.active ?? 0;
+
   const totalTasks = dashboard?.tasks?.total ?? 0;
   const completedTasks = dashboard?.tasks?.completed ?? 0;
+
   const teamMembers = dashboard?.team?.total ?? 0;
 
   const remainingTasks = Math.max(
@@ -186,6 +345,7 @@ const Dashboard = () => {
         {/* Logo */}
 
         <div className="px-7 py-7 border-b border-slate-800">
+
           <div className="flex items-center gap-3">
 
             <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center font-bold text-lg">
@@ -193,6 +353,7 @@ const Dashboard = () => {
             </div>
 
             <div>
+
               <h1 className="text-xl font-bold">
                 Work<span className="text-blue-500">Nest</span>
               </h1>
@@ -200,9 +361,11 @@ const Dashboard = () => {
               <p className="text-xs text-slate-500">
                 Project Management
               </p>
+
             </div>
 
           </div>
+
         </div>
 
         {/* Navigation */}
@@ -408,6 +571,7 @@ const Dashboard = () => {
             {/* Search Results */}
 
             {searchOpen && searchQuery.trim() && (
+
               <div className="absolute top-full left-0 right-0 mt-3 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden z-50">
 
                 {filteredProjects.length > 0 ? (
@@ -415,9 +579,11 @@ const Dashboard = () => {
                   <div className="max-h-80 overflow-y-auto">
 
                     <div className="px-4 py-3 border-b border-slate-800">
+
                       <p className="text-xs uppercase tracking-wider text-slate-500">
                         Projects
                       </p>
+
                     </div>
 
                     {filteredProjects.slice(0, 8).map((project) => (
@@ -478,6 +644,7 @@ const Dashboard = () => {
                 )}
 
               </div>
+
             )}
 
           </div>
@@ -486,17 +653,190 @@ const Dashboard = () => {
 
           <div className="flex items-center gap-5 ml-auto">
 
-            {/* Notification */}
+            {/* =================================================
+                NOTIFICATION
+            ================================================= */}
 
-            <button className="relative w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:border-slate-700 transition">
-              🔔
+            <div
+              className="relative"
+              ref={notificationRef}
+            >
 
-              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-500"></span>
-            </button>
+              <button
+                onClick={() => { console.log("BELL CLICKED"); handleNotificationOpen(); }}
+                className="relative w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:border-slate-700 transition"
+              >
+
+                <span className="text-lg">
+                  🔔
+                </span>
+
+                {unreadCount > 0 && (
+
+                  <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center border-2 border-slate-950">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+
+                )}
+
+              </button>
+
+              {/* Notification Dropdown */}
+
+              {notificationOpen && (
+
+                <div className="absolute right-0 top-full mt-3 w-360px max-w-[calc(100vw-32px)] bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden z-50">
+
+                  {/* Header */}
+
+                  <div className="px-4 py-4 border-b border-slate-800 flex items-center justify-between">
+
+                    <div>
+
+                      <h3 className="font-semibold">
+                        Notifications
+                      </h3>
+
+                      <p className="text-xs text-slate-500 mt-1">
+                        {unreadCount > 0
+                          ? `${unreadCount} unread notification${unreadCount > 1 ? "s" : ""}`
+                          : "You're all caught up"}
+                      </p>
+
+                    </div>
+
+                    {unreadCount > 0 && (
+
+                      <button
+                        onClick={handleMarkAllAsRead}
+                        className="text-xs text-blue-400 hover:text-blue-300 transition"
+                      >
+                        Mark all as read
+                      </button>
+
+                    )}
+
+                  </div>
+
+                  {/* Notifications */}
+
+                  {notificationLoading ? (
+
+                    <div className="p-8 text-center text-sm text-slate-500">
+                      Loading notifications...
+                    </div>
+
+                  ) : notifications.length === 0 ? (
+
+                    <div className="p-8 text-center">
+
+                      <div className="text-4xl mb-3">
+                        🔔
+                      </div>
+
+                      <p className="text-sm font-medium">
+                        No notifications
+                      </p>
+
+                      <p className="text-xs text-slate-500 mt-1">
+                        New workspace activity will appear here.
+                      </p>
+
+                    </div>
+
+                  ) : (
+
+                    <div className="max-h-420px overflow-y-auto">
+
+                      {notifications.map((notification) => (
+
+                        <button
+                          key={notification._id}
+                          onClick={() =>
+                            handleNotificationClick(
+                              notification
+                            )
+                          }
+                          className={`w-full text-left px-4 py-4 border-b border-slate-800/70 hover:bg-slate-800/70 transition ${
+                            !notification.isRead
+                              ? "bg-blue-500/5"
+                              : ""
+                          }`}
+                        >
+
+                          <div className="flex gap-3">
+
+                            {/* Icon */}
+
+                            <div
+                              className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                                !notification.isRead
+                                  ? "bg-blue-500/10"
+                                  : "bg-slate-800"
+                              }`}
+                            >
+                              {getNotificationIcon(
+                                notification.type
+                              )}
+                            </div>
+
+                            {/* Content */}
+
+                            <div className="min-w-0 flex-1">
+
+                              <div className="flex items-start justify-between gap-2">
+
+                                <p
+                                  className={`text-sm ${
+                                    !notification.isRead
+                                      ? "font-semibold text-white"
+                                      : "font-medium text-slate-300"
+                                  }`}
+                                >
+                                  {notification.title}
+                                </p>
+
+                                {!notification.isRead && (
+
+                                  <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0 mt-1.5">
+                                  </span>
+
+                                )}
+
+                              </div>
+
+                              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                                {notification.message}
+                              </p>
+
+                              <p className="text-[11px] text-slate-600 mt-2">
+                                {formatNotificationTime(
+                                  notification.createdAt
+                                )}
+                              </p>
+
+                            </div>
+
+                          </div>
+
+                        </button>
+
+                      ))}
+
+                    </div>
+
+                  )}
+
+                </div>
+
+              )}
+
+            </div>
 
             {/* Divider */}
 
-            <div className="hidden sm:block h-8 w-px bg-slate-800"></div>
+            <div className="hidden sm:block h-8 w-px bg-slate-800">
+            </div>
 
             {/* Profile Dropdown */}
 
@@ -517,13 +857,17 @@ const Dashboard = () => {
                 <div className="w-10 h-10 rounded-full bg-blue-600 overflow-hidden flex items-center justify-center font-bold shrink-0">
 
                   {profilePhotoUrl ? (
+
                     <img
                       src={profilePhotoUrl}
                       alt={userName}
                       className="w-full h-full object-cover"
                     />
+
                   ) : (
+
                     userInitial
+
                   )}
 
                 </div>
@@ -567,13 +911,17 @@ const Dashboard = () => {
                       <div className="w-11 h-11 rounded-full bg-blue-600 overflow-hidden flex items-center justify-center font-bold shrink-0">
 
                         {profilePhotoUrl ? (
+
                           <img
                             src={profilePhotoUrl}
                             alt={userName}
                             className="w-full h-full object-cover"
                           />
+
                         ) : (
+
                           userInitial
+
                         )}
 
                       </div>
@@ -608,6 +956,7 @@ const Dashboard = () => {
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition text-left"
                     >
                       <span>👤</span>
+
                       <span className="text-sm">
                         Profile
                       </span>
@@ -623,6 +972,7 @@ const Dashboard = () => {
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition text-left"
                     >
                       <span>⚙</span>
+
                       <span className="text-sm">
                         Settings
                       </span>
@@ -695,17 +1045,21 @@ const Dashboard = () => {
           {/* Loading */}
 
           {loading && (
+
             <div className="mb-6 bg-slate-900 border border-slate-800 rounded-xl p-4 text-slate-400">
               Loading dashboard...
             </div>
+
           )}
 
           {/* Error */}
 
           {error && (
+
             <div className="mb-6 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl p-4">
               {error}
             </div>
+
           )}
 
           {/* =================================================
@@ -835,7 +1189,7 @@ const Dashboard = () => {
                   style={{
                     width: `${completionRate}%`,
                   }}
-                ></div>
+                />
 
               </div>
 
@@ -909,7 +1263,7 @@ const Dashboard = () => {
                       style={{
                         width: `${activeProjectRate}%`,
                       }}
-                    ></div>
+                    />
 
                   </div>
 
@@ -958,7 +1312,7 @@ const Dashboard = () => {
                       style={{
                         width: `${completionRate}%`,
                       }}
-                    ></div>
+                    />
 
                   </div>
 
@@ -983,39 +1337,51 @@ const Dashboard = () => {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-6 border-t border-slate-800">
 
                 <div>
+
                   <p className="text-xs text-slate-500">
                     Projects
                   </p>
+
                   <p className="text-xl font-bold mt-1">
                     {totalProjects}
                   </p>
+
                 </div>
 
                 <div>
+
                   <p className="text-xs text-slate-500">
                     Active
                   </p>
+
                   <p className="text-xl font-bold mt-1">
                     {activeProjects}
                   </p>
+
                 </div>
 
                 <div>
+
                   <p className="text-xs text-slate-500">
                     Completed
                   </p>
+
                   <p className="text-xl font-bold mt-1">
                     {completedTasks}
                   </p>
+
                 </div>
 
                 <div>
+
                   <p className="text-xs text-slate-500">
                     Remaining
                   </p>
+
                   <p className="text-xl font-bold mt-1">
                     {remainingTasks}
                   </p>
+
                 </div>
 
               </div>
@@ -1047,7 +1413,7 @@ const Dashboard = () => {
                       style={{
                         background: `conic-gradient(#3b82f6 ${completionRate}%, #1e293b ${completionRate}% 100%)`,
                       }}
-                    ></div>
+                    />
 
                     <div className="absolute inset-3 rounded-full bg-slate-900 flex flex-col items-center justify-center">
 
@@ -1073,7 +1439,8 @@ const Dashboard = () => {
 
                     <div className="flex items-center gap-2">
 
-                      <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-blue-500">
+                      </span>
 
                       <span className="text-sm text-slate-400">
                         Active Projects
@@ -1091,7 +1458,8 @@ const Dashboard = () => {
 
                     <div className="flex items-center gap-2">
 
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500">
+                      </span>
 
                       <span className="text-sm text-slate-400">
                         Completed Tasks
@@ -1109,7 +1477,8 @@ const Dashboard = () => {
 
                     <div className="flex items-center gap-2">
 
-                      <span className="w-2.5 h-2.5 rounded-full bg-slate-700"></span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-slate-700">
+                      </span>
 
                       <span className="text-sm text-slate-400">
                         Remaining Tasks
