@@ -215,12 +215,28 @@ const updateProject = async (req, res) => {
       project.status = status;
     }
 
-    await project.save();
-
-    res.status(200).json({
-      message: "Project updated successfully",
-      project,
-    });
+await project.save();
+// Get other organization members
+const members = await User.find({
+  organization: user.organization,
+  _id: { $ne: user._id },
+});
+// Create notifications for other members
+const notifications = members.map((member) => ({
+  user: member._id,
+  organization: user.organization,
+  type: "project_updated",
+  title: "Project Updated",
+  message: `${user.name} updated the project "${project.name}"`,
+  relatedProject: project._id,
+}));
+if (notifications.length > 0) {
+  await Notification.insertMany(notifications);
+}
+res.status(200).json({
+  message: "Project updated successfully",
+  project,
+});
   } catch (error) {
     res.status(500).json({
       message: error.message,

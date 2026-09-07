@@ -1,7 +1,9 @@
-
 const Task = require("./taskModel");
+
 const Project = require("../project/projectModel");
+
 const User = require("../../models/User");
+
 const Notification = require("../../models/Notification");
 
 // ================= CREATE TASK =================
@@ -349,23 +351,85 @@ const updateTask = async (req, res) => {
       });
     }
 
-    // ================= STATUS CHANGE NOTIFICATION =================
+    // ================= TASK STATUS / COMPLETED NOTIFICATION =================
 
     if (
       status !== undefined &&
-      oldStatus !== task.status &&
-      task.createdBy &&
-      task.createdBy.toString() !== user._id.toString()
+      oldStatus !== task.status
     ) {
-      await Notification.create({
-        user: task.createdBy,
+      // Task completed
+      if (task.status === "completed") {
+        const members = await User.find({
+          organization: user.organization,
+          _id: { $ne: user._id },
+        });
+
+        const notifications = members.map((member) => ({
+          user: member._id,
+          organization: user.organization,
+          type: "task_completed",
+          title: "Task Completed",
+          message: `${user.name} completed the task "${task.title}"`,
+          relatedTask: task._id,
+          relatedProject: task.project,
+        }));
+
+        if (notifications.length > 0) {
+          await Notification.insertMany(notifications);
+        }
+      } else {
+        // Other status changes
+        const members = await User.find({
+          organization: user.organization,
+          _id: { $ne: user._id },
+        });
+
+        const notifications = members.map((member) => ({
+          user: member._id,
+          organization: user.organization,
+          type: "task_updated",
+          title: "Task Status Updated",
+          message: `${user.name} changed the status of "${task.title}" from "${oldStatus}" to "${task.status}"`,
+          relatedTask: task._id,
+          relatedProject: task.project,
+        }));
+
+        if (notifications.length > 0) {
+          await Notification.insertMany(notifications);
+        }
+      }
+    }
+
+    // ================= TASK UPDATE NOTIFICATION =================
+
+    // Only create generic update notification when
+    // the update was NOT only a status change
+    const nonStatusUpdate =
+      title !== undefined ||
+      description !== undefined ||
+      priority !== undefined ||
+      dueDate !== undefined ||
+      project !== undefined;
+
+    if (nonStatusUpdate) {
+      const members = await User.find({
         organization: user.organization,
-        type: "task_status_changed",
-        title: "Task Status Updated",
-        message: `${user.name} changed the status of "${task.title}" from "${oldStatus}" to "${task.status}"`,
+        _id: { $ne: user._id },
+      });
+
+      const notifications = members.map((member) => ({
+        user: member._id,
+        organization: user.organization,
+        type: "task_updated",
+        title: "Task Updated",
+        message: `${user.name} updated the task "${task.title}"`,
         relatedTask: task._id,
         relatedProject: task.project,
-      });
+      }));
+
+      if (notifications.length > 0) {
+        await Notification.insertMany(notifications);
+      }
     }
 
     const updatedTask = await Task.findById(task._id)
@@ -414,6 +478,31 @@ const deleteTask = async (req, res) => {
       });
     }
 
+    // Save task information before deletion
+    const taskTitle = task.title;
+    const projectId = task.project;
+
+    // Get all other organization members
+    const members = await User.find({
+      organization: user.organization,
+      _id: { $ne: user._id },
+    });
+
+    // Create delete notifications
+    const notifications = members.map((member) => ({
+      user: member._id,
+      organization: user.organization,
+      type: "task_deleted",
+      title: "Task Deleted",
+      message: `${user.name} deleted the task "${taskTitle}"`,
+      relatedProject: projectId,
+    }));
+
+    if (notifications.length > 0) {
+      await Notification.insertMany(notifications);
+    }
+
+    // Delete task
     await task.deleteOne();
 
     res.status(200).json({
