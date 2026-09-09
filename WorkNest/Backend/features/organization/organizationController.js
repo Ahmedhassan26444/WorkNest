@@ -1,6 +1,6 @@
 const Organization = require("../../models/Organization");
 const User = require("../../models/User");
-const bcrypt = require("bcryptjs");
+const bcrypt = require("bcrypt");
 
 // ================= CREATE ORGANIZATION =================
 
@@ -15,17 +15,32 @@ const createOrganization = async (req, res) => {
       });
     }
 
+    // Find current user
+    const currentUser = await User.findById(req.user._id);
+
+    if (!currentUser) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    // Prevent user from creating another organization
+    if (currentUser.organization) {
+      return res.status(400).json({
+        message: "You already belong to an organization",
+      });
+    }
+
     // Create organization
     const organization = await Organization.create({
       name,
-      owner: req.user._id,
+      owner: currentUser._id,
     });
 
     // Connect organization with current user
-    await User.findByIdAndUpdate(req.user._id, {
-      organization: organization._id,
-      role: "owner",
-    });
+    currentUser.organization = organization._id;
+    currentUser.role = "owner";
+    await currentUser.save();
 
     res.status(201).json({
       message: "Organization created successfully",
@@ -205,7 +220,6 @@ const deleteMember = async (req, res) => {
     });
   }
 };
-
 
 // ================= EXPORT CONTROLLERS =================
 
