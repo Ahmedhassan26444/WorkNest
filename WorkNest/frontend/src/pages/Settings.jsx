@@ -5,7 +5,7 @@ import {
   deleteAccount,
   uploadProfilePhoto,
   deleteProfilePhoto,
-} from "../services/userApi";
+} from "../services/userApi.Js";
 
 const Settings = () => {
   const navigate = useNavigate();

@@ -8,7 +8,6 @@ const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [organizationName, setOrganizationName] = useState("");
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -43,17 +42,12 @@ const Register = () => {
         );
       }
 
-      // Save JWT token
-      localStorage.setItem("token", data.token);
-
-      // Save logged-in user
-      localStorage.setItem(
-        "user",
-        JSON.stringify(data.user)
+      alert(
+        data.message ||
+          "Account created successfully. Please check your email to verify your account."
       );
 
-      // Directly go to Dashboard
-      navigate("/dashboard");
+      navigate("/login");
     } catch (error) {
       setError(error.message);
     } finally {

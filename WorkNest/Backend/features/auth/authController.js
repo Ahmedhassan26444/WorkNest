@@ -2,9 +2,23 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 
 const User = require("../../models/User");
 const Organization = require("../../models/Organization");
+
+// ======================================================
+// Email Transporter
+// ======================================================
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
 // ======================================================
 // Register User + Create Organization
@@ -44,6 +58,14 @@ const registerUser = async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Generate email verification token
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+
+    // Token expires in 24 hours
+    const verificationExpires = new Date(
+      Date.now() + 24 * 60 * 60 * 1000
+    );
+
     // --------------------------------------------------
     // 1. Create User
     // --------------------------------------------------
@@ -54,6 +76,9 @@ const registerUser = async (req, res) => {
       password: hashedPassword,
       role: "owner",
       organization: null,
+      isEmailVerified: false,
+      emailVerificationToken: verificationToken,
+      emailVerificationExpires: verificationExpires,
     });
 
     try {
@@ -75,13 +100,61 @@ const registerUser = async (req, res) => {
       await user.save();
 
       // ------------------------------------------------
-      // 4. Send Response
+      // 4. Send Verification Email
+      // ------------------------------------------------
+
+      const verificationUrl =
+  `http://localhost:5000/api/auth/verify-email?token=${verificationToken}`;
+
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: user.email,
+        subject: "Verify your WorkNest email",
+        html: `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+            <h2>Welcome to WorkNest</h2>
+
+            <p>Hello ${user.name},</p>
+
+            <p>
+              Thank you for creating your WorkNest account.
+              Please verify your email address by clicking the button below.
+            </p>
+
+            <p>
+              <a
+                href="${verificationUrl}"
+                style="
+                  display: inline-block;
+                  padding: 12px 20px;
+                  background: #2563eb;
+                  color: white;
+                  text-decoration: none;
+                  border-radius: 6px;
+                "
+              >
+                Verify Email
+              </a>
+            </p>
+
+            <p>
+              This verification link will expire in 24 hours.
+            </p>
+
+            <p>
+              If you did not create this account, you can ignore this email.
+            </p>
+          </div>
+        `,
+      });
+
+      // ------------------------------------------------
+      // 5. Send Response
       // ------------------------------------------------
 
       return res.status(201).json({
         message:
-          "Account and organization created successfully",
-
+          "Account and organization created successfully. Please check your email to verify your account.",
         user: {
           id: user._id,
           name: user.name,
@@ -89,8 +162,8 @@ const registerUser = async (req, res) => {
           role: user.role,
           organization: user.organization,
           profilePhoto: user.profilePhoto || null,
+          isEmailVerified: user.isEmailVerified,
         },
-
         organization: {
           id: organization._id,
           name: organization.name,
@@ -98,14 +171,60 @@ const registerUser = async (req, res) => {
         },
       });
     } catch (organizationError) {
-      // If organization creation fails,
+      // If organization/email process fails,
       // remove the newly created user
+
       await User.findByIdAndDelete(user._id);
 
       throw organizationError;
     }
   } catch (error) {
     console.error("Registration Error:", error);
+
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
+// ======================================================
+// Verify Email
+// ======================================================
+
+const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      return res.status(400).json({
+        message: "Verification token is required",
+      });
+    }
+
+    const user = await User.findOne({
+      emailVerificationToken: token,
+      emailVerificationExpires: {
+        $gt: new Date(),
+      },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        message: "Invalid or expired verification token",
+      });
+    }
+
+    user.isEmailVerified = true;
+    user.emailVerificationToken = null;
+    user.emailVerificationExpires = null;
+
+    await user.save();
+
+    return res.status(200).json({
+      message: "Email verified successfully. You can now login.",
+    });
+  } catch (error) {
+    console.error("Email Verification Error:", error);
 
     res.status(500).json({
       message: error.message,
@@ -142,6 +261,14 @@ const loginUser = async (req, res) => {
       });
     }
 
+    // Check email verification
+    if (!user.isEmailVerified) {
+      return res.status(403).json({
+        message:
+          "Please verify your email before logging in",
+      });
+    }
+
     // Generate JWT
     const token = jwt.sign(
       {
@@ -158,9 +285,7 @@ const loginUser = async (req, res) => {
 
     res.status(200).json({
       message: "Login successful",
-
       token,
-
       user: {
         id: user._id,
         name: user.name,
@@ -168,6 +293,7 @@ const loginUser = async (req, res) => {
         role: user.role,
         organization: user.organization || null,
         profilePhoto: user.profilePhoto || null,
+        isEmailVerified: user.isEmailVerified,
       },
     });
   } catch (error) {
@@ -391,6 +517,7 @@ const deleteAccount = async (req, res) => {
 module.exports = {
   registerUser,
   loginUser,
+  verifyEmail,
   updateProfile,
   uploadProfilePhoto,
   deleteProfilePhoto,

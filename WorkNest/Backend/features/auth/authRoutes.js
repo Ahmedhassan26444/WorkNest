@@ -3,11 +3,13 @@ const express = require("express");
 const {
   registerUser,
   loginUser,
+  verifyEmail,
   uploadProfilePhoto,
   deleteProfilePhoto,
 } = require("./authController");
 
 const authMiddleware = require("../../middleware/authMiddleware");
+
 const upload = require("../../middleware/uploadMiddleware");
 
 const router = express.Router();
@@ -32,5 +34,8 @@ router.delete(
   authMiddleware,
   deleteProfilePhoto
 );
+
+// Email Verification
+router.get("/verify-email", verifyEmail);
 
 module.exports = router;
