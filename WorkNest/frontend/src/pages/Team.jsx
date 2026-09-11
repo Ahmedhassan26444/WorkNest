@@ -1,13 +1,10 @@
 import { useEffect, useState } from "react";
-
 import {
   getMembers,
-  addMember,
+  sendInvitation,
   deleteMember,
 } from "../services/organizationApi";
-
 // ================= MEMBER CARD =================
-
 const MemberCard = ({
   member,
   currentUser,
@@ -31,13 +28,16 @@ const MemberCard = ({
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-slate-700 transition">
       {/* Member Info */}
+
       <div className="flex items-center gap-4">
         {/* Avatar */}
+
         <div className="w-12 h-12 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 font-semibold text-lg">
           {member.name?.charAt(0).toUpperCase()}
         </div>
 
         {/* Member Details */}
+
         <div className="min-w-0 flex-1">
           <h3 className="text-lg font-semibold truncate">
             {member.name}
@@ -50,13 +50,16 @@ const MemberCard = ({
       </div>
 
       {/* Bottom Section */}
+
       <div className="mt-5 pt-5 border-t border-slate-800 flex items-center justify-between gap-3">
         {/* Role */}
+
         <span className="inline-block px-3 py-1 rounded-full bg-slate-800 text-slate-300 text-xs capitalize">
           {member.role}
         </span>
 
         {/* Delete Button */}
+
         {canDelete && (
           <button
             onClick={handleDelete}
@@ -89,6 +92,7 @@ const Section = ({
   return (
     <section className="mb-10">
       {/* Section Header */}
+
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold">
           {title}
@@ -103,6 +107,7 @@ const Section = ({
       </div>
 
       {/* Members */}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {membersList.map((member) => (
           <MemberCard
@@ -135,9 +140,7 @@ const Team = () => {
 
   // Form Data
   const [formData, setFormData] = useState({
-    name: "",
     email: "",
-    password: "",
     role: "employee",
   });
 
@@ -203,7 +206,7 @@ const Team = () => {
     }));
   };
 
-  // ================= ADD MEMBER =================
+  // ================= SEND INVITATION =================
 
   const handleAddMember = async (event) => {
     event.preventDefault();
@@ -212,27 +215,24 @@ const Team = () => {
       setAdding(true);
       setFormError("");
 
-      await addMember(formData);
+      await sendInvitation({
+        email: formData.email,
+        role: formData.role,
+      });
 
       // Clear form
       setFormData({
-        name: "",
         email: "",
-        password: "",
         role: "employee",
       });
 
       // Close form
       setShowAddForm(false);
 
-      // Fetch updated members
-      const data = await getMembers();
-
-      setMembers(data.members || []);
       setError("");
     } catch (error) {
       setFormError(
-        error.message || "Failed to add member"
+        error.message || "Failed to send invitation"
       );
     } finally {
       setAdding(false);
@@ -281,11 +281,9 @@ const Team = () => {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-
       {/* ================= HEADER ================= */}
 
       <header className="h-20 border-b border-slate-800 bg-slate-950 flex items-center justify-between px-5 md:px-8">
-
         <div>
           <h1 className="text-xl font-semibold">
             Team
@@ -316,11 +314,9 @@ const Team = () => {
       {/* ================= CONTENT ================= */}
 
       <main className="max-w-7xl mx-auto p-5 md:p-8">
-
         {/* ================= PAGE HEADING ================= */}
 
         <div className="mb-10">
-
           <p className="text-sm text-blue-400 font-medium mb-2">
             Workspace
           </p>
@@ -332,24 +328,20 @@ const Team = () => {
           <p className="text-slate-400 mt-2">
             View and manage everyone in your organization.
           </p>
-
         </div>
 
         {/* ================= ADD MEMBER FORM ================= */}
 
         {showAddForm && canAddMember && (
           <div className="mb-10 bg-slate-900 border border-slate-800 rounded-2xl p-6">
-
             <div className="mb-6">
-
               <h2 className="text-xl font-semibold">
                 Add Team Member
               </h2>
 
               <p className="text-sm text-slate-500 mt-1">
-                Create a new member for your organization.
+                Send an invitation to join your organization.
               </p>
-
             </div>
 
             {/* FORM ERROR */}
@@ -364,31 +356,9 @@ const Team = () => {
               onSubmit={handleAddMember}
               className="grid grid-cols-1 md:grid-cols-2 gap-5"
             >
-
-              {/* NAME */}
-
-              <div>
-
-                <label className="block text-sm text-slate-400 mb-2">
-                  Full Name
-                </label>
-
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="Enter member name"
-                  required
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-600 outline-none focus:border-blue-500 transition"
-                />
-
-              </div>
-
               {/* EMAIL */}
 
               <div>
-
                 <label className="block text-sm text-slate-400 mb-2">
                   Email
                 </label>
@@ -403,37 +373,14 @@ const Team = () => {
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-600 outline-none focus:border-blue-500 transition"
                 />
 
-              </div>
-
-              {/* PASSWORD */}
-
-              <div>
-
-                <label className="block text-sm text-slate-400 mb-2">
-                  Temporary Password
-                </label>
-
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Enter temporary password"
-                  required
-                  minLength={6}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-600 outline-none focus:border-blue-500 transition"
-                />
-
                 <p className="text-xs text-slate-600 mt-2">
-                  Minimum 6 characters.
+                  An invitation link will be sent to this email.
                 </p>
-
               </div>
 
               {/* ROLE */}
 
               <div>
-
                 <label className="block text-sm text-slate-400 mb-2">
                   Role
                 </label>
@@ -444,7 +391,6 @@ const Team = () => {
                   onChange={handleChange}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500 transition"
                 >
-
                   <option value="employee">
                     Employee
                   </option>
@@ -452,19 +398,16 @@ const Team = () => {
                   <option value="manager">
                     Manager
                   </option>
-
                 </select>
 
                 <p className="text-xs text-slate-600 mt-2">
                   Owner accounts cannot be created here.
                 </p>
-
               </div>
 
               {/* BUTTONS */}
 
               <div className="md:col-span-2 flex justify-end gap-3 pt-3">
-
                 <button
                   type="button"
                   onClick={() => {
@@ -482,12 +425,10 @@ const Team = () => {
                   className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition"
                 >
                   {adding
-                    ? "Adding Member..."
-                    : "Add Member"}
+                    ? "Sending..."
+                    : "Send Invitation"}
                 </button>
-
               </div>
-
             </form>
           </div>
         )}
@@ -495,7 +436,6 @@ const Team = () => {
         {/* ================= TOTAL MEMBERS ================= */}
 
         <div className="mb-10 bg-slate-900 border border-slate-800 rounded-2xl p-6">
-
           <p className="text-sm text-slate-500">
             Total Members
           </p>
@@ -503,7 +443,6 @@ const Team = () => {
           <p className="text-3xl font-bold mt-2">
             {members.length}
           </p>
-
         </div>
 
         {/* ================= ERROR ================= */}
@@ -518,19 +457,15 @@ const Team = () => {
 
         {loading ? (
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 text-center">
-
             <p className="text-slate-400">
               Loading team members...
             </p>
-
           </div>
         ) : members.length === 0 ? (
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 text-center">
-
             <p className="text-slate-400">
               No team members found.
             </p>
-
           </div>
         ) : (
           <>
@@ -565,7 +500,6 @@ const Team = () => {
             />
           </>
         )}
-
       </main>
     </div>
   );

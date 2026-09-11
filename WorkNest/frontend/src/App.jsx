@@ -1,8 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import CreateOrganization from "./pages/CreateOrganization";
+import AcceptInvitation from "./pages/AcceptInvitation";
+
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
@@ -19,17 +20,23 @@ function App() {
       <Routes>
         {/* Authentication */}
         <Route path="/login" element={<Login />} />
-
         <Route path="/register" element={<Register />} />
 
         {/* Organization onboarding */}
-        <Route path="/create-organization" element={<CreateOrganization />} />
+        <Route
+          path="/create-organization"
+          element={<CreateOrganization />}
+        />
+
+        {/* Invitation */}
+        <Route
+          path="/accept-invitation"
+          element={<AcceptInvitation />}
+        />
 
         {/* Dashboard */}
         <Route path="/dashboard" element={<Dashboard />} />
-
         <Route path="/profile" element={<Profile />} />
-
         <Route path="/settings" element={<Settings />} />
 
         {/* Projects */}
@@ -44,15 +51,17 @@ function App() {
         {/* Task Details */}
         <Route path="/tasks/:id" element={<TaskDetails />} />
 
-        {/* Team  */}
-
+        {/* Team */}
         <Route path="/team" element={<Team />} />
 
         {/* Analytics */}
         <Route path="/analytics" element={<Analytics />} />
 
         {/* Default */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route
+          path="/"
+          element={<Navigate to="/login" replace />}
+        />
       </Routes>
     </BrowserRouter>
   );

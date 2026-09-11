@@ -96,7 +96,6 @@ const registerUser = async (req, res) => {
       // ------------------------------------------------
 
       user.organization = organization._id;
-
       await user.save();
 
       // ------------------------------------------------
@@ -104,7 +103,7 @@ const registerUser = async (req, res) => {
       // ------------------------------------------------
 
       const verificationUrl =
-  `http://localhost:5000/api/auth/verify-email?token=${verificationToken}`;
+        `http://localhost:5000/api/auth/verify-email?token=${verificationToken}`;
 
       await transporter.sendMail({
         from: process.env.EMAIL_USER,
@@ -155,6 +154,7 @@ const registerUser = async (req, res) => {
       return res.status(201).json({
         message:
           "Account and organization created successfully. Please check your email to verify your account.",
+
         user: {
           id: user._id,
           name: user.name,
@@ -164,6 +164,7 @@ const registerUser = async (req, res) => {
           profilePhoto: user.profilePhoto || null,
           isEmailVerified: user.isEmailVerified,
         },
+
         organization: {
           id: organization._id,
           name: organization.name,
@@ -173,7 +174,6 @@ const registerUser = async (req, res) => {
     } catch (organizationError) {
       // If organization/email process fails,
       // remove the newly created user
-
       await User.findByIdAndDelete(user._id);
 
       throw organizationError;
@@ -241,7 +241,10 @@ const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
     // Check user exists
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).populate(
+      "organization",
+      "name"
+    );
 
     if (!user) {
       return res.status(400).json({
@@ -275,7 +278,7 @@ const loginUser = async (req, res) => {
         id: user._id,
         email: user.email,
         role: user.role,
-        organization: user.organization || null,
+        organization: user.organization?._id || null,
       },
       process.env.JWT_SECRET,
       {
@@ -285,7 +288,9 @@ const loginUser = async (req, res) => {
 
     res.status(200).json({
       message: "Login successful",
+
       token,
+
       user: {
         id: user._id,
         name: user.name,
