@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import {
+  getProfile,
   changePassword,
   deleteAccount,
   uploadProfilePhoto,
@@ -11,7 +13,6 @@ const Settings = () => {
   const navigate = useNavigate();
 
   // ================= USER =================
-
   const storedUser = localStorage.getItem("user");
 
   const user = (() => {
@@ -27,6 +28,8 @@ const Settings = () => {
   const userRole = user?.role || "Owner";
 
   // ================= STATES =================
+  const [organizationName, setOrganizationName] =
+    useState("Loading...");
 
   const [profilePhoto, setProfilePhoto] = useState(
     user?.profilePhoto || null
@@ -37,19 +40,45 @@ const Settings = () => {
   const [photoSuccess, setPhotoSuccess] = useState("");
 
   const [showPasswordForm, setShowPasswordForm] = useState(false);
-
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
   const [passwordError, setPasswordError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState("");
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
-  // ================= PROFILE PHOTO URL =================
+  // ================= GET PROFILE =================
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await getProfile();
 
+        const currentUser = response.user;
+
+        setOrganizationName(
+          currentUser?.organization?.name || "No organization"
+        );
+
+        // Keep localStorage user updated
+        localStorage.setItem(
+          "user",
+          JSON.stringify(currentUser)
+        );
+
+        // Update profile photo if available
+        setProfilePhoto(currentUser?.profilePhoto || null);
+      } catch (error) {
+        console.error("Failed to fetch profile:", error);
+        setOrganizationName("No organization");
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  // ================= PROFILE PHOTO URL =================
   const getProfilePhotoUrl = () => {
     if (!profilePhoto) return null;
 
@@ -61,7 +90,6 @@ const Settings = () => {
   };
 
   // ================= UPLOAD PROFILE PHOTO =================
-
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
 
@@ -71,14 +99,12 @@ const Settings = () => {
     setPhotoSuccess("");
 
     // Check file type
-
     if (!file.type.startsWith("image/")) {
       setPhotoError("Please select a valid image.");
       return;
     }
 
     // Check file size - 5MB
-
     if (file.size > 5 * 1024 * 1024) {
       setPhotoError("Image must be smaller than 5MB.");
       return;
@@ -88,13 +114,11 @@ const Settings = () => {
       setPhotoLoading(true);
 
       const response = await uploadProfilePhoto(file);
-
       const updatedUser = response.user;
 
       setProfilePhoto(updatedUser.profilePhoto || null);
 
       // Update localStorage user
-
       const currentUser = JSON.parse(
         localStorage.getItem("user") || "{}"
       );
@@ -108,23 +132,23 @@ const Settings = () => {
       );
 
       setPhotoSuccess(
-        response.message || "Profile photo uploaded successfully."
+        response.message ||
+          "Profile photo uploaded successfully."
       );
     } catch (error) {
       setPhotoError(
-        error.message || "Failed to upload profile photo."
+        error.message ||
+          "Failed to upload profile photo."
       );
     } finally {
       setPhotoLoading(false);
 
       // Allow selecting the same image again
-
       e.target.value = "";
     }
   };
 
   // ================= DELETE PROFILE PHOTO =================
-
   const handleDeletePhoto = async () => {
     setPhotoError("");
     setPhotoSuccess("");
@@ -137,7 +161,6 @@ const Settings = () => {
       setProfilePhoto(null);
 
       // Update localStorage user
-
       const currentUser = JSON.parse(
         localStorage.getItem("user") || "{}"
       );
@@ -151,11 +174,13 @@ const Settings = () => {
       );
 
       setPhotoSuccess(
-        response.message || "Profile photo deleted successfully."
+        response.message ||
+          "Profile photo deleted successfully."
       );
     } catch (error) {
       setPhotoError(
-        error.message || "Failed to delete profile photo."
+        error.message ||
+          "Failed to delete profile photo."
       );
     } finally {
       setPhotoLoading(false);
@@ -163,7 +188,6 @@ const Settings = () => {
   };
 
   // ================= CHANGE PASSWORD =================
-
   const handleChangePassword = async (e) => {
     e.preventDefault();
 
@@ -171,14 +195,14 @@ const Settings = () => {
     setPasswordSuccess("");
 
     // Check empty fields
-
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setPasswordError("Please fill in all password fields.");
+      setPasswordError(
+        "Please fill in all password fields."
+      );
       return;
     }
 
     // Check password length
-
     if (newPassword.length < 6) {
       setPasswordError(
         "New password must be at least 6 characters long."
@@ -187,7 +211,6 @@ const Settings = () => {
     }
 
     // Check password match
-
     if (newPassword !== confirmPassword) {
       setPasswordError(
         "New password and confirm password do not match."
@@ -202,23 +225,23 @@ const Settings = () => {
       );
 
       setPasswordSuccess(
-        response.message || "Password changed successfully."
+        response.message ||
+          "Password changed successfully."
       );
 
       // Clear fields
-
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (error) {
       setPasswordError(
-        error.message || "Failed to change password."
+        error.message ||
+          "Failed to change password."
       );
     }
   };
 
   // ================= DELETE ACCOUNT =================
-
   const handleDeleteAccount = async () => {
     setDeleteError("");
 
@@ -226,35 +249,30 @@ const Settings = () => {
       const response = await deleteAccount();
 
       alert(
-        response.message || "Account deleted successfully."
+        response.message ||
+          "Account deleted successfully."
       );
 
       // Remove logged-in user data
-
       localStorage.removeItem("token");
       localStorage.removeItem("user");
 
       // Go back to login
-
       navigate("/login");
     } catch (error) {
       setDeleteError(
-        error.message || "Failed to delete account."
+        error.message ||
+          "Failed to delete account."
       );
     }
   };
 
   // ================= UI =================
-
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-
       {/* ================= HEADER ================= */}
-
       <header className="h-20 border-b border-slate-800 bg-slate-950 flex items-center px-5 md:px-8">
-
         <div className="flex items-center gap-4">
-
           <button
             onClick={() => navigate("/dashboard")}
             className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:border-slate-700 transition"
@@ -263,7 +281,6 @@ const Settings = () => {
           </button>
 
           <div>
-
             <h1 className="text-xl font-semibold">
               Account Settings
             </h1>
@@ -271,23 +288,15 @@ const Settings = () => {
             <p className="text-sm text-slate-500">
               Manage your WorkNest account
             </p>
-
           </div>
-
         </div>
-
       </header>
 
       {/* ================= CONTENT ================= */}
-
       <main className="max-w-4xl mx-auto p-5 md:p-8">
-
         {/* ================= ACCOUNT INFORMATION ================= */}
-
         <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden mb-6">
-
           <div className="p-6 border-b border-slate-800">
-
             <h2 className="text-lg font-semibold">
               Account Information
             </h2>
@@ -295,25 +304,18 @@ const Settings = () => {
             <p className="text-sm text-slate-500 mt-1">
               Your basic WorkNest account information.
             </p>
-
           </div>
 
           <div className="p-6 space-y-6">
-
             {/* ================= PROFILE PHOTO ================= */}
-
             <div>
-
               <label className="block text-sm text-slate-400 mb-3">
                 Profile Photo
               </label>
 
               <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-                      
                 {/* Avatar */}
-
                 <div className="w-20 h-20 rounded-full overflow-hidden bg-blue-600 flex items-center justify-center text-2xl font-bold shrink-0">
-
                   {profilePhoto ? (
                     <img
                       src={getProfilePhotoUrl()}
@@ -323,17 +325,12 @@ const Settings = () => {
                   ) : (
                     userName.charAt(0).toUpperCase()
                   )}
-
                 </div>
 
                 {/* Photo Controls */}
-
                 <div className="flex flex-col gap-3">
-
                   <div className="flex flex-wrap gap-3">
-
                     {/* Add / Change Photo */}
-
                     <label
                       className={`px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium transition cursor-pointer ${
                         photoLoading
@@ -341,7 +338,6 @@ const Settings = () => {
                           : ""
                       }`}
                     >
-
                       {photoLoading
                         ? "Uploading..."
                         : profilePhoto
@@ -355,11 +351,9 @@ const Settings = () => {
                         className="hidden"
                         disabled={photoLoading}
                       />
-
                     </label>
 
                     {/* Delete Photo */}
-
                     {profilePhoto && (
                       <button
                         type="button"
@@ -370,20 +364,16 @@ const Settings = () => {
                         Delete Photo
                       </button>
                     )}
-
                   </div>
 
                   <p className="text-xs text-slate-600">
                     JPG, PNG or other image formats. Maximum size
                     5MB.
                   </p>
-
                 </div>
-
               </div>
 
               {/* Photo Error */}
-
               {photoError && (
                 <div className="mt-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                   {photoError}
@@ -391,19 +381,15 @@ const Settings = () => {
               )}
 
               {/* Photo Success */}
-
               {photoSuccess && (
                 <div className="mt-4 p-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-sm">
                   {photoSuccess}
                 </div>
               )}
-
             </div>
 
             {/* ================= NAME ================= */}
-
             <div>
-
               <label className="block text-sm text-slate-400 mb-2">
                 Name
               </label>
@@ -414,13 +400,10 @@ const Settings = () => {
                 disabled
                 className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 outline-none"
               />
-
             </div>
 
             {/* ================= EMAIL ================= */}
-
             <div>
-
               <label className="block text-sm text-slate-400 mb-2">
                 Email
               </label>
@@ -431,13 +414,10 @@ const Settings = () => {
                 disabled
                 className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 outline-none"
               />
-
             </div>
 
             {/* ================= ROLE ================= */}
-
             <div>
-
               <label className="block text-sm text-slate-400 mb-2">
                 Role
               </label>
@@ -448,19 +428,27 @@ const Settings = () => {
                 disabled
                 className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 outline-none capitalize"
               />
-
             </div>
 
-          </div>
+            {/* ================= ORGANIZATION ================= */}
+            <div>
+              <label className="block text-sm text-slate-400 mb-2">
+                Organization
+              </label>
 
+              <input
+                type="text"
+                value={organizationName}
+                disabled
+                className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 outline-none"
+              />
+            </div>
+          </div>
         </section>
 
         {/* ================= CHANGE PASSWORD ================= */}
-
         <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden mb-6">
-
           <div className="p-6 border-b border-slate-800">
-
             <h2 className="text-lg font-semibold">
               Change Password
             </h2>
@@ -468,13 +456,10 @@ const Settings = () => {
             <p className="text-sm text-slate-500 mt-1">
               Update your account password.
             </p>
-
           </div>
 
           <div className="p-6">
-
             {!showPasswordForm ? (
-
               <button
                 onClick={() => {
                   setShowPasswordForm(true);
@@ -485,18 +470,13 @@ const Settings = () => {
               >
                 Change Password
               </button>
-
             ) : (
-
               <form
                 onSubmit={handleChangePassword}
                 className="space-y-5"
               >
-
                 {/* Current Password */}
-
                 <div>
-
                   <label className="block text-sm text-slate-400 mb-2">
                     Current Password
                   </label>
@@ -510,13 +490,10 @@ const Settings = () => {
                     placeholder="Enter current password"
                     className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-600 outline-none focus:border-blue-500"
                   />
-
                 </div>
 
                 {/* New Password */}
-
                 <div>
-
                   <label className="block text-sm text-slate-400 mb-2">
                     New Password
                   </label>
@@ -534,13 +511,10 @@ const Settings = () => {
                   <p className="text-xs text-slate-600 mt-2">
                     Password must contain at least 6 characters.
                   </p>
-
                 </div>
 
                 {/* Confirm Password */}
-
                 <div>
-
                   <label className="block text-sm text-slate-400 mb-2">
                     Confirm New Password
                   </label>
@@ -554,11 +528,9 @@ const Settings = () => {
                     placeholder="Confirm new password"
                     className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-600 outline-none focus:border-blue-500"
                   />
-
                 </div>
 
                 {/* Error */}
-
                 {passwordError && (
                   <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                     {passwordError}
@@ -566,7 +538,6 @@ const Settings = () => {
                 )}
 
                 {/* Success */}
-
                 {passwordSuccess && (
                   <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-sm">
                     {passwordSuccess}
@@ -574,9 +545,7 @@ const Settings = () => {
                 )}
 
                 {/* Buttons */}
-
                 <div className="flex flex-wrap gap-3">
-
                   <button
                     type="submit"
                     className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium transition"
@@ -595,23 +564,15 @@ const Settings = () => {
                   >
                     Cancel
                   </button>
-
                 </div>
-
               </form>
-
             )}
-
           </div>
-
         </section>
 
         {/* ================= DANGER ZONE ================= */}
-
         <section className="bg-slate-900 border border-red-500/20 rounded-2xl overflow-hidden">
-
           <div className="p-6 border-b border-red-500/10">
-
             <h2 className="text-lg font-semibold text-red-400">
               Danger Zone
             </h2>
@@ -619,13 +580,10 @@ const Settings = () => {
             <p className="text-sm text-slate-500 mt-1">
               Permanently delete your WorkNest account.
             </p>
-
           </div>
 
           <div className="p-6">
-
             {!showDeleteConfirm ? (
-
               <button
                 onClick={() => {
                   setShowDeleteConfirm(true);
@@ -635,13 +593,9 @@ const Settings = () => {
               >
                 Delete Account
               </button>
-
             ) : (
-
               <div className="space-y-4">
-
                 <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20">
-
                   <h3 className="font-semibold text-red-400">
                     Are you sure?
                   </h3>
@@ -650,11 +604,9 @@ const Settings = () => {
                     This action will permanently delete your
                     WorkNest account. This cannot be undone.
                   </p>
-
                 </div>
 
                 {/* Delete Error */}
-
                 {deleteError && (
                   <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                     {deleteError}
@@ -662,7 +614,6 @@ const Settings = () => {
                 )}
 
                 <div className="flex flex-wrap gap-3">
-
                   <button
                     onClick={handleDeleteAccount}
                     className="px-5 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium transition"
@@ -679,19 +630,12 @@ const Settings = () => {
                   >
                     Cancel
                   </button>
-
                 </div>
-
               </div>
-
             )}
-
           </div>
-
         </section>
-
       </main>
-
     </div>
   );
 };
