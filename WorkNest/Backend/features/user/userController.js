@@ -1,6 +1,5 @@
 const bcrypt = require("bcrypt");
 const User = require("../../models/User");
-
 // Update Profile
 const updateProfile = async (req, res) => {
   try {
@@ -26,9 +25,17 @@ const updateProfile = async (req, res) => {
 };
 
 // Change Password
+
 const changePassword = async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body;
+
+    // Check new password length
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({
+        message: "New password must be at least 8 characters",
+      });
+    }
 
     // Find current user
     const user = await User.findById(req.user._id);
@@ -51,6 +58,18 @@ const changePassword = async (req, res) => {
       });
     }
 
+    // Check if new password is same as old password
+    const isSamePassword = await bcrypt.compare(
+      newPassword,
+      user.password
+    );
+
+    if (isSamePassword) {
+      return res.status(400).json({
+        message: "New password must be different from old password",
+      });
+    }
+
     // Hash new password
     const hashedPassword = await bcrypt.hash(
       newPassword,
@@ -59,7 +78,6 @@ const changePassword = async (req, res) => {
 
     // Save new password
     user.password = hashedPassword;
-
     await user.save();
 
     res.status(200).json({
@@ -73,6 +91,7 @@ const changePassword = async (req, res) => {
 };
 
 // Delete Account
+
 const deleteAccount = async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.user._id);

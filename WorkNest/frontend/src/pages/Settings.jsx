@@ -23,17 +23,28 @@ const Settings = () => {
     }
   })();
 
-  const userName = user?.name || "Ahmed Hassan";
-  const userEmail = user?.email || "No email";
-  const userRole = user?.role || "Owner";
-
   // ================= STATES =================
-  const [organizationName, setOrganizationName] =
-    useState("Loading...");
+  const [userName, setUserName] = useState(
+    user?.name || "Ahmed Hassan"
+  );
+
+  const [userEmail, setUserEmail] = useState(
+    user?.email || "No email"
+  );
+
+  const [userRole, setUserRole] = useState(
+    user?.role || "Owner"
+  );
+
+  const [organizationName, setOrganizationName] = useState(
+    "Loading..."
+  );
 
   const [profilePhoto, setProfilePhoto] = useState(
     user?.profilePhoto || null
   );
+
+  const [profileLoading, setProfileLoading] = useState(true);
 
   const [photoLoading, setPhotoLoading] = useState(false);
   const [photoError, setPhotoError] = useState("");
@@ -49,29 +60,36 @@ const Settings = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
-  // ================= GET PROFILE =================
+  // ================= GET FRESH PROFILE =================
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await getProfile();
+        setProfileLoading(true);
 
+        const response = await getProfile();
         const currentUser = response.user;
+
+        setUserName(currentUser?.name || "Ahmed Hassan");
+        setUserEmail(currentUser?.email || "No email");
+        setUserRole(currentUser?.role || "Owner");
 
         setOrganizationName(
           currentUser?.organization?.name || "No organization"
         );
 
-        // Keep localStorage user updated
+        setProfilePhoto(currentUser?.profilePhoto || null);
+
+        // Keep localStorage user updated with fresh backend data
         localStorage.setItem(
           "user",
           JSON.stringify(currentUser)
         );
-
-        // Update profile photo if available
-        setProfilePhoto(currentUser?.profilePhoto || null);
       } catch (error) {
         console.error("Failed to fetch profile:", error);
+
         setOrganizationName("No organization");
+      } finally {
+        setProfileLoading(false);
       }
     };
 
@@ -396,7 +414,7 @@ const Settings = () => {
 
               <input
                 type="text"
-                value={userName}
+                value={profileLoading ? "Loading..." : userName}
                 disabled
                 className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 outline-none"
               />
@@ -410,7 +428,7 @@ const Settings = () => {
 
               <input
                 type="email"
-                value={userEmail}
+                value={profileLoading ? "Loading..." : userEmail}
                 disabled
                 className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 outline-none"
               />
@@ -424,7 +442,7 @@ const Settings = () => {
 
               <input
                 type="text"
-                value={userRole}
+                value={profileLoading ? "Loading..." : userRole}
                 disabled
                 className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 outline-none capitalize"
               />
