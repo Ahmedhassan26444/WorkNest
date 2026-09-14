@@ -1,11 +1,9 @@
 const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
-
 const Invitation = require("../../models/Invitation");
 const User = require("../../models/User");
 const Organization = require("../../models/Organization");
-
 // ================= EMAIL TRANSPORTER =================
 
 const transporter = nodemailer.createTransport({
@@ -84,9 +82,9 @@ const createInvitation = async (req, res) => {
     // Generate invitation token
     const invitationToken = crypto.randomBytes(32).toString("hex");
 
-    // Invitation expires after 24 hours
+    // Invitation expires after 30 days
     const expiresAt = new Date(
-      Date.now() + 24 * 60 * 60 * 1000
+      Date.now() + 30 * 24 * 60 * 60 * 1000
     );
 
     // Create invitation
@@ -100,8 +98,7 @@ const createInvitation = async (req, res) => {
     });
 
     // Invitation URL
-    const invitationUrl =
-      `http://localhost:5173/accept-invitation?token=${invitationToken}`;
+    const invitationUrl = `http://localhost:5173/accept-invitation?token=${invitationToken}`;
 
     // Get organization
     const organization = await Organization.findById(
@@ -116,7 +113,6 @@ const createInvitation = async (req, res) => {
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
           <h2>You're invited to join WorkNest</h2>
-
           <p>
             <strong>${currentUser.name}</strong> has invited you to join
             <strong>${organization?.name || "their organization"}</strong>
@@ -142,7 +138,7 @@ const createInvitation = async (req, res) => {
           </a>
 
           <p style="margin-top: 20px;">
-            This invitation will expire in 24 hours.
+            This invitation will expire in 30 days.
           </p>
 
           <p>
@@ -242,9 +238,10 @@ const acceptInvitation = async (req, res) => {
         });
       }
 
-      if (password.length < 6) {
+      // Password must be at least 8 characters
+      if (password.length < 8) {
         return res.status(400).json({
-          message: "Password must be at least 6 characters",
+          message: "Password must be at least 8 characters",
         });
       }
 
@@ -266,6 +263,7 @@ const acceptInvitation = async (req, res) => {
 
     // Mark invitation as accepted
     invitation.acceptedAt = new Date();
+
     await invitation.save();
 
     res.status(200).json({
@@ -291,4 +289,3 @@ module.exports = {
   createInvitation,
   acceptInvitation,
 };
-
