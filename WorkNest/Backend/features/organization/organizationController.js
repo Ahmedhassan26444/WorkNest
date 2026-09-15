@@ -1,6 +1,7 @@
 const Organization = require("../../models/Organization");
 const User = require("../../models/User");
 const bcrypt = require("bcrypt");
+const Task = require("../task/taskModel");
 
 // ================= CREATE ORGANIZATION =================
 
@@ -208,6 +209,17 @@ const deleteMember = async (req, res) => {
         message: "Manager cannot delete another manager",
       });
     }
+    await Task.updateMany(
+  {
+    assignedTo: memberId,
+    organization: user.organization,
+  },
+  {
+    $set: {
+      assignedTo: null,
+    },
+  }
+);
 
     await User.findByIdAndDelete(memberId);
 
