@@ -1,105 +1,135 @@
-WorkNest
-WorkNest is a multi tenant SaaS project management dashboard. Each organization gets its own isolated workspace. Projects, tasks, team members, notifications, and analytics are scoped to the organization so one organization cannot access or modify another organization's data.
-Built with the MERN stack using MongoDB, Express, React, and Node.js, with JWT authentication, role based access control, and email driven onboarding.
+# WorkNest
 
-Features
-Multi Tenant Architecture
-Every project, task, notification, and team member is scoped to an organization and protected through organization level queries in the backend controllers.
+WorkNest is a multi-tenant SaaS project management dashboard. Each organization gets its own isolated workspace — projects, tasks, team members, and analytics are all scoped so one organization can never see or touch another's data.
 
-Authentication
-Register and login with JWT
-Email verification required before login
+Built as a MERN-stack project (MongoDB, Express, React, Node.js) with JWT authentication, role-based access control, and email-driven onboarding.
+
+## Features
+
+### Multi-tenant architecture
+
+Every project, task, and notification is scoped to an organization and enforced at the query level in every controller.
+
+### Authentication
+
+Register + login with JWT
+
+Email verification (required before login)
+
 Change password
+
 Delete account with safe cleanup of related data
-Role based access control with owner, manager, and employee roles
 
-Team Management
+Role-based access control — owner, manager, and employee roles with different permissions across projects, tasks, and team management
 
-Invite members by email using a token based invitation flow
-Remove members without deleting their assigned work
-Tasks belonging to removed members are automatically unassigned instead of being deleted
+### Team management
 
+Invite members by email using a token-based invitation flow
 
-Projects and Tasks
+Remove members without orphaning their work — their tasks are unassigned, not deleted
 
-Create, read, update, and delete projects
-Create, read, update, and delete tasks
-Task status tracking
+### Projects & Tasks
+
+Full CRUD
+
+Status tracking
+
 Task assignment
+
 Due dates
+
 Priority levels
 
+### Dashboard & Analytics
 
-Dashboard and Analytics
+Organization-wide statistics
 
-Organization wide dashboard statistics
-Organization scoped analytics
+Analytics scoped per tenant
 
-Notifications
-In app notifications for project and task activity
-Notifications are scoped to the user's organization
+### Notifications
 
-Profile Management
-Update profile name
-Upload profile photo
-Delete profile photo
-Change password
+In-app notifications tied to project and task activity
 
-Tech Stack
+### Profile management
 
-Backend
-Node.js
-Express 5
-MongoDB
-Mongoose
-JWT using jsonwebtoken
-bcrypt
-Multer for profile photo uploads
-Nodemailer with Gmail for email services
+Profile photo upload and delete
 
-Frontend
-React 19
-Vite
+Name updates
+
+## Tech Stack
+
+### Backend
+
+Node.js + Express 5
+
+MongoDB + Mongoose
+
+JWT (jsonwebtoken)
+
+bcrypt for password hashing
+
+multer for file uploads
+
+nodemailer (Gmail) for email services
+
+### Frontend
+
+React 19 + Vite
+
 React Router 7
+
 Tailwind CSS 4
-Axios and Fetch API
 
-Core Flow
-Register creates a User and a new Organization.
-The organization creator becomes the owner.
-A verification email is sent to the registered email address.
-Verify the email to activate the account.
-Login issues a JWT with a 30 day expiry.
-The JWT is sent as a Bearer token with protected API requests.
-The owner or manager can invite teammates through email.
-Invited users join the same organization through the invitation flow.
-Organization members can create and manage projects and tasks according to their assigned role.
+Axios / Fetch API
 
-Security
-JWT based authentication
-Passwords are securely hashed using bcrypt
-Email verification before account activation
-Role based authorization middleware
-Organization scoped database queries
-Protected API routes require authentication
-Users cannot access resources belonging to another organization
+## Core Flow
 
-Roadmap
-Auth including register, login, and email verification
+Register → creates a User (owner) + a new Organization and sends a verification email.
+
+Verify email → click the verification link to activate the account.
+
+Login → issues a JWT (30-day expiry) used as a Bearer token on protected requests.
+
+Invite teammates → owner/manager sends invitations by email; invitees register and join the same organization.
+
+Work → create projects, add tasks, assign them to members, and track task status.
+
+## Security
+
+JWT-based authentication
+
+Passwords securely hashed with bcrypt
+
+Email verification before login
+
+Role-based authorization middleware
+
+Organization-scoped database queries
+
+Protected API routes
+
+Tenant isolation between organizations
+
+## Roadmap
+
+Auth (register, login, email verification)
+
 Team invitations
-Role based permissions
 
+Role-based permissions
 
-Project Structure
+## Project Structure
+
+```text
 WorkNest/
 ├── Backend/
 │   ├── config/
-│   │   └── db.js
+│   │   └── db.js                      # MongoDB connection
 │   │
 │   ├── features/
 │   │   ├── auth/
-│   │   │   ├── authController.js
-│   │   │   ├── authRoutes.js
+│   │   │   ├── authController.js      # Register, login, verification, password reset
+│   │   │   ├── authRoutes.js          # Auth API routes
 │   │   │   └── ...
 │   │   │
 │   │   ├── organization/
@@ -107,25 +137,16 @@ WorkNest/
 │   │   │   ├── organizationRoutes.js
 │   │   │   └── ...
 │   │   │
-│   │   ├── project/
-│   │   │   └── ...
-│   │   │
-│   │   ├── task/
-│   │   │   └── ...
-│   │   │
-│   │   ├── dashboard/
-│   │   │   └── ...
-│   │   │
-│   │   ├── analytics/
-│   │   │   └── ...
-│   │   │
-│   │   └── notification/
-│   │       └── ...
+│   │   ├── project/                   # Project CRUD
+│   │   ├── task/                      # Task CRUD
+│   │   ├── dashboard/                 # Dashboard statistics
+│   │   ├── analytics/                 # Analytics statistics
+│   │   └── notification/              # Notifications
 │   │
 │   ├── middleware/
-│   │   ├── authMiddleware.js
-│   │   ├── roleMiddleware.js
-│   │   └── uploadMiddleware.js
+│   │   ├── authMiddleware.js           # JWT authentication
+│   │   ├── roleMiddleware.js           # Role-based access control
+│   │   └── uploadMiddleware.js         # Multer profile photo upload
 │   │
 │   ├── models/
 │   │   ├── User.js
@@ -134,10 +155,11 @@ WorkNest/
 │   │   └── Invitation.js
 │   │
 │   ├── utils/
-│   │   ├── emailService.js
-│   │   └── validatePassword.js
+│   │   ├── emailService.js             # Nodemailer email service
+│   │   └── validatePassword.js         # Password strength validation
 │   │
-│   ├── uploads/
+│   ├── uploads/                         # Uploaded profile photos
+│   │
 │   ├── .env.example
 │   ├── package.json
 │   └── server.js
@@ -147,6 +169,8 @@ WorkNest/
     │   ├── pages/
     │   │   ├── Login.jsx
     │   │   ├── Register.jsx
+    │   │   ├── ForgotPassword.jsx
+    │   │   ├── ResetPassword.jsx
     │   │   ├── Dashboard.jsx
     │   │   ├── Projects.jsx
     │   │   ├── Tasks.jsx
@@ -162,32 +186,45 @@ WorkNest/
     │   │   └── ...
     │   │
     │   ├── config/
-    │   │   └── api.js
+    │   │   └── api.js                  # Centralized API base URL
     │   │
-    │   ├── components/
-    │   ├── App.jsx
+    │   ├── components/                 # Reusable UI components
+    │   ├── App.jsx                     # Application routes
     │   └── main.jsx
     │
     ├── .env.example
     ├── package.json
     └── vite.config.js
+```
 
-Environment Variables
-Create a .env file inside the Backend directory.
+## Environment Variables
+
+Create a `.env` file inside the `Backend` directory.
+
+```env
 MONGO_URI=
 JWT_SECRET=
 EMAIL_USER=
 EMAIL_PASS=
 FRONTEND_URL=
-See .env.example for the required environment variables.
+```
+
+See `.env.example` for the required environment variables.
+
 Never commit real environment variables or secrets to the repository.
 
-Frontend Setup
+## Frontend Setup
+
+```bash
 cd frontend
 npm install
 npm run dev
+```
 
-Backend Setup
+## Backend Setup
+
+```bash
 cd Backend
 npm install
 npm run dev
+```
