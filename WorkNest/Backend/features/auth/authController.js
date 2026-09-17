@@ -7,6 +7,10 @@ const nodemailer = require("nodemailer");
 
 const User = require("../../models/User");
 const Organization = require("../../models/Organization");
+const Project = require("../project/projectModel");
+const Task = require("../task/taskModel");
+const Notification = require("../../models/Notification");
+const Invitation = require("../../models/Invitation");
 
 // ======================================================
 // Email Transporter
@@ -495,9 +499,7 @@ const changePassword = async (req, res) => {
 
 const deleteAccount = async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(
-      req.user._id
-    );
+    const user = await User.findById(req.user._id);
 
     if (!user) {
       return res.status(404).json({
@@ -505,10 +507,70 @@ const deleteAccount = async (req, res) => {
       });
     }
 
+    if (user.role === "owner" && user.organization) {
+      const organizationId = user.organization;
+
+      await Project.deleteMany({
+        organization: organizationId,
+      });
+
+      await Task.deleteMany({
+        organization: organizationId,
+      });
+
+      await Notification.deleteMany({
+        organization: organizationId,
+      });
+
+      await Invitation.deleteMany({
+        organization: organizationId,
+      });
+
+      await User.updateMany(
+        {
+          organization: organizationId,
+          _id: { $ne: user._id },
+        },
+        {
+          $set: {
+            organization: null,
+          },
+        }
+      );
+
+      await Organization.findByIdAndDelete(
+        organizationId
+      );
+    }
+
+    if (user.profilePhoto) {
+      const photoPath = path.join(
+        __dirname,
+        "../../",
+        user.profilePhoto
+      );
+
+      if (fs.existsSync(photoPath)) {
+        fs.unlinkSync(photoPath);
+      }
+    }
+
+    await Notification.deleteMany({
+      user: user._id,
+    });
+
+    await Invitation.deleteMany({
+      invitedBy: user._id,
+    });
+
+    await User.findByIdAndDelete(user._id);
+
     res.status(200).json({
       message: "Account deleted successfully",
     });
   } catch (error) {
+    console.error("Delete Account Error:", error);
+
     res.status(500).json({
       message: error.message,
     });

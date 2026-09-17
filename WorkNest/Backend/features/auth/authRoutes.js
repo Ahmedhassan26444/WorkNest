@@ -1,11 +1,11 @@
 const express = require("express");
-
 const {
   registerUser,
   loginUser,
   verifyEmail,
   uploadProfilePhoto,
   deleteProfilePhoto,
+  deleteAccount,
 } = require("./authController");
 
 const authMiddleware = require("../../middleware/authMiddleware");
@@ -37,5 +37,12 @@ router.delete(
 
 // Email Verification
 router.get("/verify-email", verifyEmail);
+
+// Delete Account
+router.delete(
+  "/delete-account",
+  authMiddleware,
+  deleteAccount
+);
 
 module.exports = router;
